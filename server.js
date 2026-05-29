@@ -1,3 +1,15 @@
+async function sendTelegram(message) {
+  const url = `https://api.telegram.org/bot${process.env.TELEGRAM_TOKEN}/sendMessage`;
+
+  await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chat_id: process.env.TELEGRAM_CHAT_ID,
+      text: message
+    })
+  });
+}
 import express from "express";
 import cors from "cors";
 
@@ -65,7 +77,17 @@ app.get("/arbs", async (req, res) => {
   try {
     const matches = await getLiveMatches();
     const arbs = detectArb(matches);
+if (arbs.length > 0) {
+  const best = arbs[0];
 
+  await sendTelegram(
+`🔥 ARBITRAGE FOUND!
+
+Match: ${best.match}
+Profit: ${best.profit.toFixed(2)}
+Bookmakers: ${best.bookmakerA} vs ${best.bookmakerB}`
+  );
+}
     res.json({
       success: true,
       count: arbs.length,
