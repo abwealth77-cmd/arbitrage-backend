@@ -61,15 +61,26 @@ function detectArb(matches, stake = 10000) {
   return results;
 }
 
-app.get("/arbs", (req, res) => {
-  const matches = await getLiveMatches();
-  const arbs = detectArb(matches);
+app.get("/arbs", async (req, res) => {
+  try {
+    const matches = await getLiveMatches();
+    const arbs = detectArb(matches);
 
-  res.json({
-    success: true,
-    count: arbs.length,
-    data: arbs
-  });
+    res.json({
+      success: true,
+      count: arbs.length,
+      data: arbs
+    });
+
+  } catch (error) {
+    console.log(error);
+
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: error.message
+    });
+  }
 });
 
 app.get("/health", (req, res) => {
