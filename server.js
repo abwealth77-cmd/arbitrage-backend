@@ -1,14 +1,29 @@
 async function sendTelegram(message) {
-  const url = `https://api.telegram.org/bot${process.env.TELEGRAM_TOKEN}/sendMessage`;
+  try {
+    const url = `https://api.telegram.org/bot${process.env.TELEGRAM_TOKEN}/sendMessage`;
 
-  await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      chat_id: process.env.TELEGRAM_CHAT_ID,
-      text: message
-    })
-  });
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: process.env.TELEGRAM_CHAT_ID,
+        text: message,
+        parse_mode: "HTML" // optional but useful
+      })
+    });
+
+    const data = await res.json();
+
+    if (!data.ok) {
+      console.error("Telegram error:", data);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error("Network/Telegram failure:", error);
+    return false;
+  }
 }
 import express from "express";
 import cors from "cors";
