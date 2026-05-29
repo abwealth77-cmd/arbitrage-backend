@@ -5,16 +5,35 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-function getMockMatches() {
-  return [
-    {
-      match: "Team A vs Team B",
-      oddsA: 2.1,
-      oddsB: 2.2,
-      bookmakerA: "Bookie1",
-      bookmakerB: "Bookie2"
-    }
-  ];
+async function getLiveMatches() {
+  const url = `https://api.the-odds-api.com/v4/sports/soccer/odds/?regions=eu&markets=h2h&apiKey=${process.env.API_KEY}`;
+
+  const res = await fetch(url);
+  const data = await res.json();
+
+  const matches = [];
+
+  data.forEach((event) => {
+    if (!event.bookmakers || event.bookmakers.length < 2) return;
+
+    try {
+      const b1 = event.bookmakers[0];
+      const b2 = event.bookmakers[1];
+
+      const oddsA = b1.markets[0].outcomes[0].price;
+      const oddsB = b2.markets[0].outcomes[1].price;
+
+      matches.push({
+        match: `${event.home_team} vs ${event.away_team}`,
+        oddsA,
+        oddsB,
+        bookmakerA: b1.title,
+        bookmakerB: b2.title
+      });
+    } catch (e) {}
+  });
+
+  return matches;
 }
 
 function detectArb(matches, stake = 10000) {
@@ -43,7 +62,7 @@ function detectArb(matches, stake = 10000) {
 }
 
 app.get("/arbs", (req, res) => {
-  const matches = getMockMatches();
+  const matches = await getLiveMatches();
   const arbs = detectArb(matches);
 
   res.json({
