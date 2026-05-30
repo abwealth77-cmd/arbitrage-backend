@@ -85,27 +85,27 @@ app.get("/arbs", async (req, res) => {
         const implied = odds.reduce((sum, o) => sum + (1 / o), 0);
         const profit = (1 - implied) * 100;
 
-        // 🔥 SMART FILTER (shows both arbs + near arbs)
+        // // 🔥 SMART FILTER
         if (profit > -3) {
 
-  if (profit > 0) {
-    sendTelegramMessage(
-      `🔥 ARBITRAGE ALERT
+          if (profit > 0) {
+            sendTelegramMessage(
+              `🔥 ARBITRAGE ALERT
 
 ${match.home_team} vs ${match.away_team}
 Profit: ${profit.toFixed(2)}%`
-    );
-  }
+            );
+          }
 
-  results.push({
-    match: `${match.home_team} vs ${match.away_team}`,
-    sport,
-    profit: profit.toFixed(2) + "%",
-    status: profit > 0 ? "ARBITRAGE" : "NEAR ARB",
-    odds: best
-  });
+          results.push({
+            match: `${match.home_team} vs ${match.away_team}`,
+            sport,
+            profit: profit.toFixed(2) + "%",
+            status: profit > 0 ? "ARBITRAGE" : "NEAR ARB",
+            odds: best
+          });
 
-}
+        } // ✅ THIS CLOSING BRACE WAS MISSING/UNBALANCED BEFORE
 
     res.json({
       success: true,
