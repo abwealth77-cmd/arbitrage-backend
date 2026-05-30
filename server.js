@@ -90,7 +90,7 @@ app.get("/arbs", async (req, res) => {
 
           if (profit > 0) {
             sendTelegramMessage(
-              `🔥 ARBITRAGE ALERT
+              🔥 ARBITRAGE ALERT
 
 ${match.home_team} vs ${match.away_team}
 Profit: ${profit.toFixed(2)}%`
