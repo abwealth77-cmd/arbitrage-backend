@@ -104,10 +104,14 @@ if (arbs.length > 0) {
 `🔥 ARBITRAGE FOUND!
 
 Match: ${best.match}
-Profit: ${best.profit.toFixed(2)}
-Bookmakers: ${best.bookmakerA} vs ${best.bookmakerB}`
-  );
-}
+
+💰 Profit: ${best.profitPercent.toFixed(2)}%
+💵 Stake A: ${best.stakeA.toFixed(0)}
+💵 Stake B: ${best.stakeB.toFixed(0)}
+
+Bookmakers:
+${best.bookmakerA} vs ${best.bookmakerB}`
+);
     res.json({
       success: true,
       count: arbs.length,
