@@ -75,18 +75,20 @@ function detectArb(matches, stake = 10000) {
     if (sum < 1) {
       const returnAmount = stake / sum;
       const profit = returnAmount - stake;
+      const profitPercent = (profit / stake) * 100;
 
       results.push({
         ...m,
         sum,
-        profit,
+        profit: Number(profit.toFixed(2)),
+        profitPercent: Number(profitPercent.toFixed(2)),
         stakeA: (invA / sum) * stake,
         stakeB: (invB / sum) * stake
       });
     }
   });
 
-  return results;
+  return results.sort((a, b) => b.profitPercent - a.profitPercent);
 }
 app.get("/", (req, res) => {
   res.send("Backend is running 🚀");
