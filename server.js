@@ -9,6 +9,22 @@ app.use(express.json());
 const API_KEY = process.env.ODDS_API_KEY;
 const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
+async function sendTelegramMessage(text) {
+  if (!TELEGRAM_TOKEN || !TELEGRAM_CHAT_ID) return;
+
+  try {
+    await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: TELEGRAM_CHAT_ID,
+        text
+      })
+    });
+  } catch (err) {
+    console.error("Telegram error:", err.message);
+  }
+}
 // -------------------- HOME ROUTE --------------------
 app.get("/", (req, res) => {
   res.json({
