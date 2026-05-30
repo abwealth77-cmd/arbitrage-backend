@@ -31,7 +31,7 @@ import cors from "cors";
 const app = express();
 app.use(cors());
 app.use(express.json());
-setInterval(async () => {
+async function runScanner() {
   try {
     const matches = await getLiveMatches();
     const arbs = detectArb(matches);
@@ -40,7 +40,7 @@ setInterval(async () => {
       const best = arbs[0];
 
       await sendTelegram(
-`🔥 AUTO ARBITRAGE ALERT!
+`🔥 LIVE ARBITRAGE ALERT!
 
 Match: ${best.match}
 
@@ -54,9 +54,15 @@ ${best.bookmakerA} vs ${best.bookmakerB}`
     }
 
   } catch (err) {
-    console.log("Auto scanner error:", err.message);
+    console.log("Scanner error:", err.message);
   }
-}, 15000);
+
+  // 🔁 run again after finishing
+  setTimeout(runScanner, 5000);
+}
+
+// start scanner
+runScanner();
 let lastSentMatch = null;
 
 async function getLiveMatches() {
