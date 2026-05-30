@@ -88,7 +88,9 @@ function detectArb(matches, stake = 10000) {
 
   return results;
 }
-
+app.get("/", (req, res) => {
+  res.send("Backend is running 🚀");
+});
 app.get("/arbs", async (req, res) => {
   try {
     const matches = await getLiveMatches();
