@@ -5,8 +5,10 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
+
 const API_KEY = process.env.ODDS_API_KEY;
 
+// 🟢 HOME ROUTE
 app.get("/", (req, res) => {
   res.json({
     success: true,
@@ -14,57 +16,45 @@ app.get("/", (req, res) => {
   });
 });
 
+// 🟡 CHECK API KEY
+app.get("/test-key", (req, res) => {
+  res.json({
+    keyExists: !!API_KEY
+  });
+});
+
+// 🔵 ARBITRAGE ROUTE (SAFE VERSION)
 app.get("/arbs", async (req, res) => {
   try {
-    const url =
-      `https://api.the-odds-api.com/v4/sports/soccer_epl/odds/?apiKey=${API_KEY}&regions=eu&markets=h2h`;
+    if (!API_KEY) {
+      return res.status(500).json({
+        success: false,
+        message: "Missing API key"
+      });
+    }
+
+    const url = `https://api.the-odds-api.com/v4/sports/soccer_epl/odds/?apiKey=${API_KEY}&regions=eu&markets=h2h`;
 
     const response = await fetch(url);
     const data = await response.json();
 
-    const results = [];
-
-    data.forEach(match => {
-      const books = match.bookmakers;
-
-      if (!books || books.length < 2) return;
-
-      const b1 = books[0];
-      const b2 = books[1];
-
-      const o1 = b1.markets[0].outcomes[0].price;
-      const o2 = b2.markets[0].outcomes[0].price;
-
-      const implied = (1 / o1) + (1 / o2);
-
-      if (implied < 1) {
-        results.push({
-          match: `${match.home_team} vs ${match.away_team}`,
-          bookmakerA: b1.title,
-          bookmakerB: b2.title,
-          oddsA: o1,
-          oddsB: o2,
-          profit: ((1 - implied) * 100).toFixed(2) + "%"
-        });
-      }
-    });
-
     res.json({
       success: true,
-      count: results.length,
-      data: results
+      count: data.length,
+      data: data.slice(0, 5)
     });
 
   } catch (err) {
-    console.error("ARBS ERROR:", err);
+    console.error("ERROR:", err);
 
     res.status(500).json({
       success: false,
-      message: err.message,
-      error: err.toString()
+      message: err.message
     });
   }
+});
 
+// 🚀 START SERVER
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
