@@ -7,7 +7,8 @@ app.use(cors());
 app.use(express.json());
 
 const API_KEY = process.env.ODDS_API_KEY;
-
+const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
+const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 // -------------------- HOME ROUTE --------------------
 app.get("/", (req, res) => {
   res.json({
