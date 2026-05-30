@@ -5,6 +5,7 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
+const API_KEY = process.env.ODDS_API_KEY;
 
 app.get("/", (req, res) => {
   res.json({
