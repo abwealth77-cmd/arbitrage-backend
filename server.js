@@ -109,7 +109,7 @@ ${best.bookmakerA} vs ${best.bookmakerB}`
 
 runScanner();
 let lastSentMatch = null;
-let lastSentArbKey = null;
+
 
 async 
 async function getLiveMatches() {
