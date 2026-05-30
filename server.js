@@ -87,16 +87,25 @@ app.get("/arbs", async (req, res) => {
 
         // 🔥 SMART FILTER (shows both arbs + near arbs)
         if (profit > -3) {
-          results.push({
-            match: `${match.home_team} vs ${match.away_team}`,
-            sport,
-            profit: profit.toFixed(2) + "%",
-            status: profit > 0 ? "ARBITRAGE" : "NEAR ARB",
-            odds: best
-          });
-        }
-      });
-    }
+
+  if (profit > 0) {
+    sendTelegramMessage(
+      `🔥 ARBITRAGE ALERT
+
+${match.home_team} vs ${match.away_team}
+Profit: ${profit.toFixed(2)}%`
+    );
+  }
+
+  results.push({
+    match: `${match.home_team} vs ${match.away_team}`,
+    sport,
+    profit: profit.toFixed(2) + "%",
+    status: profit > 0 ? "ARBITRAGE" : "NEAR ARB",
+    odds: best
+  });
+
+}
 
     res.json({
       success: true,
