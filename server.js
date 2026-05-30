@@ -56,12 +56,14 @@ app.get("/arbs", async (req, res) => {
     });
 
   } catch (err) {
+    console.error("ARBS ERROR:", err);
+
     res.status(500).json({
       success: false,
-      message: "API error"
+      message: err.message,
+      error: err.toString()
     });
   }
-});
 
 const PORT = process.env.PORT || 3000;
 
