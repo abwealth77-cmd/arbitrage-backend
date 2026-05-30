@@ -68,6 +68,16 @@ function detectArb(matches, stake = 10000) {
   const results = [];
 
   matches.forEach((m) => {
+
+    // 🧼 FILTER INVALID ODDS
+    if (
+      !m.oddsA || !m.oddsB ||
+      m.oddsA < 1.3 || m.oddsB < 1.3 ||
+      m.oddsA > 5 || m.oddsB > 5
+    ) {
+      return;
+    }
+
     const invA = 1 / m.oddsA;
     const invB = 1 / m.oddsB;
     const sum = invA + invB;
@@ -76,6 +86,11 @@ function detectArb(matches, stake = 10000) {
       const returnAmount = stake / sum;
       const profit = returnAmount - stake;
       const profitPercent = (profit / stake) * 100;
+
+      // 🧼 FILTER FAKE ARBS
+      if (profitPercent < 0.3 || profitPercent > 8) {
+        return;
+      }
 
       results.push({
         ...m,
