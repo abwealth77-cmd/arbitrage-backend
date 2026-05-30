@@ -31,6 +31,27 @@ import cors from "cors";
 const app = express();
 app.use(cors());
 app.use(express.json());
+function scoreArb(arb) {
+  let score = 100;
+
+  // 🧠 Profit scoring (sweet spot: 0.5% - 5%)
+  if (arb.profitPercent < 0.5) score -= 30;
+  if (arb.profitPercent > 5) score -= 40;
+
+  // ⚠️ penalize extreme odds (likely bad data)
+  if (arb.oddsA > 6 || arb.oddsB > 6) score -= 30;
+
+  // ✔ reward stable mid-range odds
+  if (arb.oddsA >= 1.4 && arb.oddsA <= 3.5) score += 10;
+  if (arb.oddsB >= 1.4 && arb.oddsB <= 3.5) score += 10;
+
+  // ✔ small consistency boost
+  score += (5 - Math.abs(arb.profitPercent)) * 2;
+
+  return score;
+}
+let lastSentArbKey = null;
+
 async function runScanner() {
   try {
     const matches = await getLiveMatches();
@@ -40,15 +61,24 @@ async function runScanner() {
       return;
     }
 
-    // 🏆 SORT BY BEST PROFIT
-    const sorted = arbs.sort((a, b) => b.profitPercent - a.profitPercent);
+    // 🧠 SCORE ALL ARBS
+    const scored = arbs.map(a => ({
+      ...a,
+      score: scoreArb(a)
+    }));
 
-    const best = sorted[0];
+    // 🏆 PICK BEST SCORE
+    scored.sort((a, b) => b.score - a.score);
+    const best = scored[0];
 
-    // 🔑 unique key
+    // ❌ ignore low-quality opportunities
+    if (best.score < 70) {
+      return;
+    }
+
     const arbKey = `${best.match}-${best.bookmakerA}-${best.bookmakerB}-${best.oddsA}-${best.oddsB}`;
 
-    // ❌ prevent duplicate alerts
+    // 🚫 prevent duplicates
     if (arbKey === lastSentArbKey) {
       return;
     }
@@ -56,11 +86,13 @@ async function runScanner() {
     lastSentArbKey = arbKey;
 
     await sendTelegram(
-`🔥 BEST ARBITRAGE OPPORTUNITY
+`🧠 AI ARBITRAGE SIGNAL
 
 Match: ${best.match}
 
 💰 Profit: ${(best.profitPercent || 0).toFixed(2)}%
+📊 AI Score: ${best.score.toFixed(1)}
+
 💵 Stake A: ${best.stakeA.toFixed(0)}
 💵 Stake B: ${best.stakeB.toFixed(0)}
 
@@ -69,7 +101,7 @@ ${best.bookmakerA} vs ${best.bookmakerB}`
     );
 
   } catch (err) {
-    console.log("Scanner error:", err.message);
+    console.log("AI Scanner error:", err.message);
   }
 
   setTimeout(runScanner, 5000);
@@ -77,7 +109,9 @@ ${best.bookmakerA} vs ${best.bookmakerB}`
 
 runScanner();
 let lastSentMatch = null;
+let lastSentArbKey = null;
 
+async 
 async function getLiveMatches() {
   const url = `https://api.the-odds-api.com/v4/sports/soccer/odds/?regions=eu&markets=h2h&apiKey=${process.env.API_KEY}`;
 
