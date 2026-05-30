@@ -96,10 +96,30 @@ app.get("/", (req, res) => {
 app.get("/arbs", async (req, res) => {
   try {
     const matches = await getLiveMatches();
+
+    // SAFE CHECK 1
+    if (!Array.isArray(matches)) {
+      return res.json({
+        success: false,
+        message: "getLiveMatches did not return array",
+        data: []
+      });
+    }
+
     const arbs = detectArb(matches);
-if (arbs.length > 0) {
-  const best = arbs[0];
-await sendTelegram(
+
+    // SAFE CHECK 2
+    if (!Array.isArray(arbs) || arbs.length === 0) {
+      return res.json({
+        success: true,
+        count: 0,
+        data: []
+      });
+    }
+
+    const best = arbs[0];
+
+    await sendTelegram(
 `🔥 ARBITRAGE FOUND!
 
 Match: ${best.match}
@@ -110,7 +130,7 @@ Match: ${best.match}
 
 Bookmakers:
 ${best.bookmakerA} vs ${best.bookmakerB}`
-);
+    );
 
     res.json({
       success: true,
@@ -119,7 +139,7 @@ ${best.bookmakerA} vs ${best.bookmakerB}`
     });
 
   } catch (error) {
-    console.log(error);
+    console.error("ARBS ERROR:", error);
 
     res.status(500).json({
       success: false,
