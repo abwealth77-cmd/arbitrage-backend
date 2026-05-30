@@ -31,6 +31,32 @@ import cors from "cors";
 const app = express();
 app.use(cors());
 app.use(express.json());
+setInterval(async () => {
+  try {
+    const matches = await getLiveMatches();
+    const arbs = detectArb(matches);
+
+    if (arbs && arbs.length > 0) {
+      const best = arbs[0];
+
+      await sendTelegram(
+`🔥 AUTO ARBITRAGE ALERT!
+
+Match: ${best.match}
+
+💰 Profit: ${(best.profitPercent || 0).toFixed(2)}%
+💵 Stake A: ${best.stakeA.toFixed(0)}
+💵 Stake B: ${best.stakeB.toFixed(0)}
+
+Bookmakers:
+${best.bookmakerA} vs ${best.bookmakerB}`
+      );
+    }
+
+  } catch (err) {
+    console.log("Auto scanner error:", err.message);
+  }
+}, 15000);
 let lastSentMatch = null;
 
 async function getLiveMatches() {
