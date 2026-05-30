@@ -53,7 +53,6 @@ app.get("/arbs", async (req, res) => {
 
         let bestOdds = {};
 
-        // collect best odds across bookmakers
         books.forEach(b => {
           b.markets[0].outcomes.forEach(o => {
             if (!bestOdds[o.name] || o.price > bestOdds[o.name]) {
@@ -68,18 +67,31 @@ app.get("/arbs", async (req, res) => {
         const implied = odds.reduce((sum, o) => sum + (1 / o), 0);
         const profit = (1 - implied) * 100;
 
-        // 🔥 NEW: relaxed condition (important change)
-        if (profit > 0 || profit > -2) {
+        if (profit > 0) {
           alerts.push({
             match: `${match.home_team} vs ${match.away_team}`,
             sport,
             profit: profit.toFixed(2) + "%",
-            type: profit > 0 ? "ARBITRAGE" : "NEAR ARB (WATCH)",
             odds: bestOdds
           });
         }
       });
     }
+
+    res.json({
+      success: true,
+      count: alerts.length,
+      data: alerts
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      success: false,
+      message: err.message
+    });
+  }
+});
 
     res.json({
       success: true,
