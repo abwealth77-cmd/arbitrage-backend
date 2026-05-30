@@ -31,6 +31,7 @@ import cors from "cors";
 const app = express();
 app.use(cors());
 app.use(express.json());
+let lastSentMatch = null;
 
 async function getLiveMatches() {
   const url = `https://api.the-odds-api.com/v4/sports/soccer/odds/?regions=eu&markets=h2h&apiKey=${process.env.API_KEY}`;
