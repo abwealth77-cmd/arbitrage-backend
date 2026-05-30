@@ -108,21 +108,7 @@ app.get("/arbs", async (req, res) => {
   }
 });
 
-    res.json({
-      success: true,
-      count: data.length,
-      data: data.slice(0, 5)
-    });
-
-  } catch (err) {
-    console.error("ERROR:", err);
-
-    res.status(500).json({
-      success: false,
-      message: err.message
-    });
-  }
-});
+  
 
 // 🚀 START SERVER
 const PORT = process.env.PORT || 3000;
