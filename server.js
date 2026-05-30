@@ -8,7 +8,7 @@ app.use(express.json());
 
 const API_KEY = process.env.ODDS_API_KEY;
 
-// 🟢 HOME ROUTE
+// -------------------- HOME ROUTE --------------------
 app.get("/", (req, res) => {
   res.json({
     success: true,
@@ -16,14 +16,14 @@ app.get("/", (req, res) => {
   });
 });
 
-// 🟡 CHECK API KEY
+// -------------------- TEST KEY --------------------
 app.get("/test-key", (req, res) => {
   res.json({
     keyExists: !!API_KEY
   });
 });
 
-// 🔵 ARBITRAGE ROUTE (SAFE VERSION)
+// -------------------- ARBITRAGE ROUTE --------------------
 app.get("/arbs", async (req, res) => {
   try {
     const sports = [
@@ -85,7 +85,8 @@ app.get("/arbs", async (req, res) => {
     });
 
   } catch (err) {
-    console.error(err);
+    console.error("ERROR:", err);
+
     res.status(500).json({
       success: false,
       message: err.message
@@ -93,24 +94,7 @@ app.get("/arbs", async (req, res) => {
   }
 });
 
-    res.json({
-      success: true,
-      count: alerts.length,
-      data: alerts
-    });
-
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({
-      success: false,
-      message: err.message
-    });
-  }
-});
-
-  
-
-// 🚀 START SERVER
+// -------------------- START SERVER --------------------
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
