@@ -50,7 +50,7 @@ function scoreArb(arb) {
 
   return score;
 }
-let lastSentArbKey = null;
+
 
 async function runScanner() {
   try {
@@ -109,7 +109,7 @@ ${best.bookmakerA} vs ${best.bookmakerB}`
 
 runScanner();
 let lastSentMatch = null;
-
+let lastSentArbKey = null;
 
 async 
 async function getLiveMatches() {
