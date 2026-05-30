@@ -85,15 +85,16 @@ app.get("/arbs", async (req, res) => {
         const implied = odds.reduce((sum, o) => sum + (1 / o), 0);
         const profit = (1 - implied) * 100;
 
-        // // 🔥 SMART FILTER
-        if (profit > 0) {
-  const message =
-    "🔥 ARBITRAGE ALERT\n\n" +
-    match.home_team + " vs " + match.away_team + "\n" +
-    "Profit: " + profit.toFixed(2) + "%";
+        if (profit > -3) {
 
-  sendTelegramMessage(message);
-}
+          if (profit > 0) {
+            const message =
+              "🔥 ARBITRAGE ALERT\n\n" +
+              match.home_team + " vs " + match.away_team + "\n" +
+              "Profit: " + profit.toFixed(2) + "%";
+
+            sendTelegramMessage(message);
+          }
 
           results.push({
             match: `${match.home_team} vs ${match.away_team}`,
@@ -103,7 +104,10 @@ app.get("/arbs", async (req, res) => {
             odds: best
           });
 
-        } // ✅ THIS CLOSING BRACE WAS MISSING/UNBALANCED BEFORE
+        }
+
+      });
+    }
 
     res.json({
       success: true,
@@ -118,10 +122,4 @@ app.get("/arbs", async (req, res) => {
       message: err.message
     });
   }
-});
-// -------------------- START SERVER --------------------
-const PORT = process.env.PORT || 3000;
-
-app.listen(PORT, () => {
-  console.log("Server running on port", PORT);
 });
