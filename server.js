@@ -39,8 +39,18 @@ async function runScanner() {
     if (arbs && arbs.length > 0) {
       const best = arbs[0];
 
+      // 🔑 create unique fingerprint for this arb
+      const arbKey = `${best.match}-${best.bookmakerA}-${best.bookmakerB}-${best.oddsA}-${best.oddsB}`;
+
+      // ❌ prevent duplicate alerts
+      if (arbKey === lastSentArbKey) {
+        return;
+      }
+
+      lastSentArbKey = arbKey;
+
       await sendTelegram(
-`🔥 LIVE ARBITRAGE ALERT!
+`🔥 LIVE ARBITRAGE ALERT
 
 Match: ${best.match}
 
@@ -57,11 +67,9 @@ ${best.bookmakerA} vs ${best.bookmakerB}`
     console.log("Scanner error:", err.message);
   }
 
-  // 🔁 run again after finishing
   setTimeout(runScanner, 5000);
 }
 
-// start scanner
 runScanner();
 let lastSentMatch = null;
 
