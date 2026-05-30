@@ -86,16 +86,14 @@ app.get("/arbs", async (req, res) => {
         const profit = (1 - implied) * 100;
 
         // // 🔥 SMART FILTER
-        if (profit > -3) {
+        if (profit > 0) {
+  const message =
+    "🔥 ARBITRAGE ALERT\n\n" +
+    match.home_team + " vs " + match.away_team + "\n" +
+    "Profit: " + profit.toFixed(2) + "%";
 
-          if (profit > 0) {
-            sendTelegramMessage(
-              🔥 ARBITRAGE ALERT
-
-${match.home_team} vs ${match.away_team}
-Profit: ${profit.toFixed(2)}%`
-            );
-          }
+  sendTelegramMessage(message);
+}
 
           results.push({
             match: `${match.home_team} vs ${match.away_team}`,
