@@ -36,21 +36,27 @@ async function runScanner() {
     const matches = await getLiveMatches();
     const arbs = detectArb(matches);
 
-    if (arbs && arbs.length > 0) {
-      const best = arbs[0];
+    if (!arbs || arbs.length === 0) {
+      return;
+    }
 
-      // 🔑 create unique fingerprint for this arb
-      const arbKey = `${best.match}-${best.bookmakerA}-${best.bookmakerB}-${best.oddsA}-${best.oddsB}`;
+    // 🏆 SORT BY BEST PROFIT
+    const sorted = arbs.sort((a, b) => b.profitPercent - a.profitPercent);
 
-      // ❌ prevent duplicate alerts
-      if (arbKey === lastSentArbKey) {
-        return;
-      }
+    const best = sorted[0];
 
-      lastSentArbKey = arbKey;
+    // 🔑 unique key
+    const arbKey = `${best.match}-${best.bookmakerA}-${best.bookmakerB}-${best.oddsA}-${best.oddsB}`;
 
-      await sendTelegram(
-`🔥 LIVE ARBITRAGE ALERT
+    // ❌ prevent duplicate alerts
+    if (arbKey === lastSentArbKey) {
+      return;
+    }
+
+    lastSentArbKey = arbKey;
+
+    await sendTelegram(
+`🔥 BEST ARBITRAGE OPPORTUNITY
 
 Match: ${best.match}
 
@@ -60,8 +66,7 @@ Match: ${best.match}
 
 Bookmakers:
 ${best.bookmakerA} vs ${best.bookmakerB}`
-      );
-    }
+    );
 
   } catch (err) {
     console.log("Scanner error:", err.message);
