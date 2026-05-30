@@ -99,19 +99,19 @@ app.get("/arbs", async (req, res) => {
     const arbs = detectArb(matches);
 if (arbs.length > 0) {
   const best = arbs[0];
-
-  await sendTelegram(
+await sendTelegram(
 `🔥 ARBITRAGE FOUND!
 
 Match: ${best.match}
 
-💰 Profit: ${best.profitPercent.toFixed(2)}%
-💵 Stake A: ${best.stakeA.toFixed(0)}
-💵 Stake B: ${best.stakeB.toFixed(0)}
+💰 Profit: ${(best.profitPercent || 0).toFixed(2)}%
+💵 Stake A: ${(best.stakeA || 0).toFixed(0)}
+💵 Stake B: ${(best.stakeB || 0).toFixed(0)}
 
 Bookmakers:
 ${best.bookmakerA} vs ${best.bookmakerB}`
 );
+
     res.json({
       success: true,
       count: arbs.length,
