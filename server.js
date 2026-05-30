@@ -14,7 +14,7 @@ app.get("/", (req, res) => {
   });
 });
 
-app.app.get("/arbs", async (req, res) => {
+app.get("/arbs", async (req, res) => {
   try {
     const url =
       `https://api.the-odds-api.com/v4/sports/soccer_epl/odds/?apiKey=${API_KEY}&regions=eu&markets=h2h`;
