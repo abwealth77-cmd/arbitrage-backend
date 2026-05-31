@@ -111,50 +111,52 @@ app.get("/arbs", async (req, res) => {
       if (!Array.isArray(data)) continue;
 
       data.forEach(match => {
-       if (!match.home_team || !match.away_team) return; const books = match.bookmakers;
-        if (!books) return;
 
-        let best = {};
+  if (!match.home_team || !match.away_team) return;
 
-        books.forEach(b => {
-          b.markets?.[0]?.outcomes?.forEach(o => {
-            if (!best[o.name] || o.price > best[o.name]) {
-              best[o.name] = o.price;
-            }
-          });
-        });
-console.log(match.home_team, match.away_team, best);
-        const odds = Object.values(best);
+  const books = match.bookmakers;
+  if (!books) return;
 
-// allow both 2-way and 3-way markets
-if (odds.length < 2) return;
+  let best = {};
 
-        const totalImplied = odds.reduce((sum, o) => sum + (1 / o), 0);
-const profit = ((1 / totalImplied) - 1) * 100;
+  books.forEach(b => {
+    b.markets?.[0]?.outcomes?.forEach(o => {
+      if (!best[o.name] || o.price > best[o.name]) {
+        best[o.name] = o.price;
+      }
+    });
+  });
 
-        if (profit > -10) {
+  console.log(match.home_team, match.away_team, best);
 
-          if (profit > -1) {
-            const message =
-              "🔥 ARBITRAGE ALERT\n\n" +
-              match.home_team + " vs " + match.away_team + "\n" +
-              "Profit: " + profit.toFixed(2) + "%";
+  const odds = Object.values(best);
+  if (odds.length < 2) return;
 
-            sendTelegramMessage(message);
-          }
+  const totalImplied = odds.reduce((sum, o) => sum + (1 / o), 0);
+  const profit = ((1 / totalImplied) - 1) * 100;
 
-          results.push({
-            match: `${match.home_team} vs ${match.away_team}`,
-            sport,
-            profit: profit.toFixed(2) + "%",
-            status: profit > 0 ? "ARBITRAGE" : "NEAR ARB",
-            odds: best
-          });
+  if (profit > -10) {
 
-        }
+    if (profit > 0.2) {
+      const message =
+        "🔥 ARBITRAGE ALERT\n\n" +
+        match.home_team + " vs " + match.away_team + "\n" +
+        "Profit: " + profit.toFixed(2) + "%";
 
-      });
+      sendTelegramMessage(message);
     }
+
+    results.push({
+      match: `${match.home_team} vs ${match.away_team}`,
+      sport,
+      profit: profit.toFixed(2) + "%",
+      status: profit > 0 ? "ARBITRAGE" : "NEAR ARB",
+      odds: best
+    });
+
+  }
+
+});
 
     res.json({
       success: true,
