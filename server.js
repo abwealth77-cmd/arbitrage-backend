@@ -44,16 +44,41 @@ app.get("/test-key", (req, res) => {
 app.get("/arbs", async (req, res) => {
   try {
     const sports = [
-      "soccer_epl",
-      "soccer_spain_la_liga",
-      "soccer_italy_serie_a",
-      "soccer_germany_bundesliga",
-      "soccer_france_ligue_one",
-      "soccer_brazil_serie_a",
-      "soccer_brazil_serie_b",
-      "soccer_usa_mls",
-      "soccer_argentina_primera_division"
-    ];
+  // Europe top leagues
+  "soccer_epl",
+  "soccer_spain_la_liga",
+  "soccer_italy_serie_a",
+  "soccer_germany_bundesliga",
+  "soccer_france_ligue_one",
+
+  // Scandinavia (your focus)
+  "soccer_norway_eliteserien",
+  "soccer_norway_obos_ligaen",
+  "soccer_sweden_allsvenskan",
+  "soccer_sweden_superettan",
+  "soccer_denmark_superliga",
+  "soccer_denmark_1st_div",
+
+  // Finland
+  "soccer_finland_veikkausliiga",
+
+  // Australia
+  "soccer_australia_aleague",
+  "soccer_australia_npl",
+
+  // Americas
+  "soccer_usa_mls",
+  "soccer_mexico_liga_mx",
+  "soccer_brazil_serie_a",
+  "soccer_brazil_serie_b",
+  "soccer_argentina_primera_division",
+
+  // Extra Europe depth
+  "soccer_portugal_primeira_liga",
+  "soccer_netherlands_eredivisie",
+  "soccer_turkey_super_league",
+  "soccer_belgium_first_division_a"
+];
 
     let results = [];
 
