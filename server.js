@@ -114,7 +114,7 @@ if (odds.length < 2) return;
         const totalImplied = odds.reduce((sum, o) => sum + (1 / o), 0);
 const profit = ((1 / totalImplied) - 1) * 100;
 
-        if (profit > -1.5) {
+        if (profit > -10) {
 
           if (profit > 0.2) {
             const message =
