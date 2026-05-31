@@ -92,7 +92,7 @@ app.get("/arbs", async (req, res) => {
 
       data.forEach(match => {
         const books = match.bookmakers;
-        if (!books || books.length < 2) return;
+        if (!books) return;
 
         let best = {};
 
@@ -103,9 +103,9 @@ app.get("/arbs", async (req, res) => {
             }
           });
         });
-
+console.log(match.home_team, match.away_team, best);
         const odds = Object.values(best);
-        if (odds.length < 2) return;
+        if (odds.length < 1) return;
 
         const implied = odds.reduce((sum, o) => sum + (1 / o), 0);
         const profit = (1 - implied) * 100;
