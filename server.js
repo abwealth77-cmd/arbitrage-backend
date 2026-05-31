@@ -5,7 +5,25 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
+const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
+const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
+async function sendTelegramMessage(text) {
+  if (!TELEGRAM_TOKEN || !TELEGRAM_CHAT_ID) return;
+
+  try {
+    await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: TELEGRAM_CHAT_ID,
+        text: text
+      })
+    });
+  } catch (err) {
+    console.error("Telegram error:", err.message);
+  }
+}
 const API_KEY = process.env.ODDS_API_KEY;
 const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
@@ -116,7 +134,7 @@ const profit = ((1 / totalImplied) - 1) * 100;
 
         if (profit > -10) {
 
-          if (profit > 0.2) {
+          if (profit > -1) {
             const message =
               "🔥 ARBITRAGE ALERT\n\n" +
               match.home_team + " vs " + match.away_team + "\n" +
