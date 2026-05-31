@@ -44,46 +44,48 @@ app.get("/test-key", (req, res) => {
 app.get("/arbs", async (req, res) => {
   try {
     const sports = [
-  // Europe top leagues
+  // Top Europe (keep)
   "soccer_epl",
   "soccer_spain_la_liga",
   "soccer_italy_serie_a",
   "soccer_germany_bundesliga",
   "soccer_france_ligue_one",
 
-  // Scandinavia (your focus)
+  // Scandinavia (good for variance)
   "soccer_norway_eliteserien",
   "soccer_norway_obos_ligaen",
   "soccer_sweden_allsvenskan",
   "soccer_sweden_superettan",
   "soccer_denmark_superliga",
-  "soccer_denmark_1st_div",
+  "soccer_denmark_1st_division",
 
-  // Finland
-  "soccer_finland_veikkausliiga",
-
-  // Australia
-  "soccer_australia_aleague",
-  "soccer_australia_npl",
-
-  // Americas
-  "soccer_usa_mls",
-  "soccer_mexico_liga_mx",
+  // Africa-style volatility (important)
+  "soccer_south_africa_premier",
+  
+  // South America (high variance = more arbs)
   "soccer_brazil_serie_a",
   "soccer_brazil_serie_b",
   "soccer_argentina_primera_division",
+  "soccer_colombia_categoria_a",
 
-  // Extra Europe depth
+  // Europe secondary markets (VERY IMPORTANT)
   "soccer_portugal_primeira_liga",
   "soccer_netherlands_eredivisie",
   "soccer_turkey_super_league",
-  "soccer_belgium_first_division_a"
+  "soccer_belgium_first_division_a",
+
+  // Asia (adds noise = more mismatch chances)
+  "soccer_japan_j_league",
+  "soccer_korea_kleague1",
+
+  // Australia
+  "soccer_australia_aleague"
 ];
 
     let results = [];
 
     for (const sport of sports) {
-      const url = `https://api.the-odds-api.com/v4/sports/${sport}/odds/?apiKey=${API_KEY}&regions=eu&markets=h2h&bookmakers=bet365,pinnacle,1xbet`;
+    console.log("Checking sport:", sport);  const url = `https://api.the-odds-api.com/v4/sports/${sport}/odds/?apiKey=${API_KEY}&regions=eu&markets=h2h&bookmakers=bet365,pinnacle,1xbet`;
 
       const response = await fetch(url);
       const data = await response.json();
