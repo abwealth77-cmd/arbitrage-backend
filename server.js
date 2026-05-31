@@ -91,7 +91,7 @@ app.get("/arbs", async (req, res) => {
       if (!Array.isArray(data)) continue;
 
       data.forEach(match => {
-        const books = match.bookmakers;
+       if (!match.home_team || !match.away_team) return; const books = match.bookmakers;
         if (!books) return;
 
         let best = {};
