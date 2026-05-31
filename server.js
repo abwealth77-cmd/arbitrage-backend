@@ -107,14 +107,16 @@ app.get("/arbs", async (req, res) => {
         });
 console.log(match.home_team, match.away_team, best);
         const odds = Object.values(best);
-        if (odds.length < 1) return;
 
-        const implied = odds.reduce((sum, o) => sum + (1 / o), 0);
-        const profit = (1 - implied) * 100;
+// allow both 2-way and 3-way markets
+if (odds.length < 2) return;
 
-        if (profit > -8) {
+        const totalImplied = odds.reduce((sum, o) => sum + (1 / o), 0);
+const profit = ((1 / totalImplied) - 1) * 100;
 
-          if (profit > 0) {
+        if (profit > -1.5) {
+
+          if (profit > 0.2) {
             const message =
               "🔥 ARBITRAGE ALERT\n\n" +
               match.home_team + " vs " + match.away_team + "\n" +
