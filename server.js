@@ -85,7 +85,7 @@ app.get("/arbs", async (req, res) => {
         const implied = odds.reduce((sum, o) => sum + (1 / o), 0);
         const profit = (1 - implied) * 100;
 
-        if (profit > -3) {
+        if (profit > -8) {
 
           if (profit > 0) {
             const message =
