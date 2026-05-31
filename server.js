@@ -1,10 +1,19 @@
 const express = require("express");
+ cors = require("cors");
+
+const app = express();
+
+app.use(cors());
+app.use(express.json());
+const express = require("express");
 const cors = require("cors");
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
+
+const API_KEY = process.env.ODDS_API_KEY;
 const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
@@ -17,7 +26,7 @@ async function sendTelegramMessage(text) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         chat_id: TELEGRAM_CHAT_ID,
-        text: text
+        text
       })
     });
   } catch (err) {
