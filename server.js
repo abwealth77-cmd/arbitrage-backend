@@ -19,6 +19,9 @@ const BOOK_SCORE = {
   bet365: 0.97,
   "1xbet": 0.92
 };
+function calculateScore(profit, bookCount) {
+  return (profit * 10) + (bookCount * 2);
+}
 async function sendTelegramMessage(text) {
   if (!TELEGRAM_TOKEN || !TELEGRAM_CHAT_ID) return;
 
