@@ -107,9 +107,9 @@ app.get("/arbs", async (req, res) => {
         const totalImplied = odds.reduce((sum, o) => sum + (1 / o), 0);
         const profit = ((1 / totalImplied) - 1) * 100;
 
-        if (profit > -10) {
+        if (profit > 0) {
 
-          if (profit > 0.2) {
+          if (profit > 0.5) {
             sendTelegramMessage(
               "🔥 ARBITRAGE ALERT\n\n" +
               match.home_team + " vs " + match.away_team + "\n" +
