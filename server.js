@@ -63,6 +63,12 @@ app.get("/arbs", async (req, res) => {
       "soccer_spain_segunda_division"
     ];
 
+    const BOOK_WEIGHT = {
+      pinnacle: 1.0,
+      bet365: 0.98,
+      "1xbet": 0.95
+    };
+
     let results = [];
 
     for (const sport of sports) {
@@ -81,35 +87,51 @@ app.get("/arbs", async (req, res) => {
 
         let best = {};
 
-        // STEP 1: get best odds per outcome
+        // STEP 1: weighted best odds (IMPORTANT UPGRADE)
         books.forEach(b => {
+          const weight = BOOK_WEIGHT[b.key] || 0.9;
+
           b.markets?.[0]?.outcomes?.forEach(o => {
-            if (!best[o.name] || o.price > best[o.name]) {
-              best[o.name] = o.price;
+            const weightedPrice = o.price * weight;
+
+            if (!best[o.name] || weightedPrice > best[o.name]) {
+              best[o.name] = weightedPrice;
             }
           });
         });
 
         const odds = Object.values(best);
-        if (odds.length < 2) return;
+        const labels = Object.keys(best);
 
-        // STEP 2: arb formula
+        if (odds.length !== 3) return; // enforce TRUE 3-way market
+
+        // STEP 2: true arbitrage formula
         const totalImplied = odds.reduce((sum, o) => sum + (1 / o), 0);
         const profit = ((1 / totalImplied) - 1) * 100;
 
-        // 🚨 STRICT FILTER (IMPORTANT)
-        if (profit <= 0.5) return; // ignore weak & negative edges
+        // STEP 3: strict filtering (PRO LEVEL)
+        if (profit < 0.8) return;
+
+        // STEP 4: stake calculator (VERY IMPORTANT)
+        const bankroll = 100; // you can change later
+        const stakes = {};
+
+        labels.forEach(label => {
+          stakes[label] = ((bankroll / best[label]) / totalImplied).toFixed(2);
+        });
 
         const status =
-          profit >= 1.5
-            ? "🔥 STRONG ARBITRAGE"
-            : "⚡ VALID ARBITRAGE";
+          profit >= 2
+            ? "🔥 HIGH VALUE ARB"
+            : "⚡ VALID ARB";
 
-        // Telegram ONLY real arbs
+        // STEP 5: Telegram alert (clean + actionable)
         sendTelegramMessage(
-          `🚨 ARBITRAGE ALERT\n\n` +
+          `🚨 PRO ARBITRAGE ALERT 🚨\n\n` +
           `${match.home_team} vs ${match.away_team}\n` +
-          `Profit: ${profit.toFixed(2)}%\n` +
+          `Profit: ${profit.toFixed(2)}%\n\n` +
+          `📊 STAKES (₦100 example):\n` +
+          `${labels.map(l => `${l}: ${stakes[l]}`).join("\n")}\n\n` +
           `Status: ${status}`
         );
 
@@ -118,7 +140,8 @@ app.get("/arbs", async (req, res) => {
           sport,
           profit: profit.toFixed(2) + "%",
           status,
-          odds: best
+          odds: best,
+          stakes
         });
       });
     }
@@ -126,13 +149,13 @@ app.get("/arbs", async (req, res) => {
     return res.json({
       success: true,
       count: results.length,
-      data: results.sort((a, b) =>
-        parseFloat(b.profit) - parseFloat(a.profit)
+      data: results.sort(
+        (a, b) => parseFloat(b.profit) - parseFloat(a.profit)
       )
     });
 
   } catch (err) {
-    console.error("ARB ERROR:", err);
+    console.error("PRO ARB ERROR:", err);
     return res.status(500).json({
       success: false,
       message: err.message
