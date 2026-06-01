@@ -48,6 +48,28 @@ function logTrade(trade) {
 
   fs.writeFileSync(file, JSON.stringify(logs, null, 2));
 }
+async function runArbEngine() {
+  if (isRunning) return; // prevents overlap
+
+  isRunning = true;
+  lastRunTime = Date.now();
+
+  try {
+    console.log("🚀 ARB ENGINE RUNNING...");
+
+    // CALL YOUR EXISTING LOGIC HERE
+    await runArbLogic();
+
+    failureCount = 0; // reset on success
+
+  } catch (err) {
+    failureCount++;
+    console.log("❌ ARB ENGINE ERROR:", err.message);
+
+  } finally {
+    isRunning = false;
+  }
+}
 async function sendTelegramMessage(text) {
   if (!TELEGRAM_TOKEN || !TELEGRAM_CHAT_ID) return;
 
