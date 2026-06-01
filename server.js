@@ -42,7 +42,14 @@ app.get("/test-key", (req, res) => {
     keyExists: !!API_KEY
   });
 });
+app.get("/sports", async (req, res) => {
+  const response = await fetch(
+    `https://api.the-odds-api.com/v4/sports/?apiKey=${API_KEY}`
+  );
 
+  const data = await response.json();
+  res.json(data);
+});
 // -------------------- ARBITRAGE ROUTE --------------------
 app.get("/arbs", async (req, res) => {
   try {
