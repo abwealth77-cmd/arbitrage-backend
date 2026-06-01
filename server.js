@@ -54,20 +54,18 @@ app.get("/sports", async (req, res) => {
 app.get("/arbs", async (req, res) => {
   try {
     const sports = [
-  "soccer_brazil_serie_b",
-  "soccer_chile_campeonato",
-  "soccer_conmebol_copa_libertadores",
-  "soccer_conmebol_copa_sudamericana",
-  "soccer_japan_j_league",
-  "soccer_norway_eliteserien",
-  "soccer_spain_segunda_division"
-];
+      "soccer_brazil_serie_b",
+      "soccer_chile_campeonato",
+      "soccer_conmebol_copa_libertadores",
+      "soccer_conmebol_copa_sudamericana",
+      "soccer_japan_j_league",
+      "soccer_norway_eliteserien",
+      "soccer_spain_segunda_division"
+    ];
 
     let results = [];
 
     for (const sport of sports) {
-      console.log("Checking sport:", sport);
-
       const url = `https://api.the-odds-api.com/v4/sports/${sport}/odds/?apiKey=${API_KEY}&regions=eu&markets=h2h&bookmakers=bet365,pinnacle,1xbet`;
 
       const response = await fetch(url);
@@ -76,7 +74,6 @@ app.get("/arbs", async (req, res) => {
       if (!Array.isArray(data)) continue;
 
       data.forEach(match => {
-
         if (!match.home_team || !match.away_team) return;
 
         const books = match.bookmakers;
@@ -84,6 +81,7 @@ app.get("/arbs", async (req, res) => {
 
         let best = {};
 
+        // STEP 1: get best odds per outcome
         books.forEach(b => {
           b.markets?.[0]?.outcomes?.forEach(o => {
             if (!best[o.name] || o.price > best[o.name]) {
@@ -95,42 +93,46 @@ app.get("/arbs", async (req, res) => {
         const odds = Object.values(best);
         if (odds.length < 2) return;
 
+        // STEP 2: arb formula
         const totalImplied = odds.reduce((sum, o) => sum + (1 / o), 0);
         const profit = ((1 / totalImplied) - 1) * 100;
-        console.log("BEST ODDS:", best);
-        console.log("PROFIT:", profit);
 
-        if (profit > -8) {
+        // 🚨 STRICT FILTER (IMPORTANT)
+        if (profit <= 0.5) return; // ignore weak & negative edges
 
-          if (profit > 0.5) {
-            sendTelegramMessage(
-              "🔥 ARBITRAGE ALERT\n\n" +
-              match.home_team + " vs " + match.away_team + "\n" +
-              "Profit: " + profit.toFixed(2) + "%"
-            );
-          }
+        const status =
+          profit >= 1.5
+            ? "🔥 STRONG ARBITRAGE"
+            : "⚡ VALID ARBITRAGE";
 
-          results.push({
-            match: `${match.home_team} vs ${match.away_team}`,
-            sport,
-            profit: profit.toFixed(2) + "%",
-            status: profit > 0 ? "ARBITRAGE" : "NEAR ARB",
-            odds: best
-          });
+        // Telegram ONLY real arbs
+        sendTelegramMessage(
+          `🚨 ARBITRAGE ALERT\n\n` +
+          `${match.home_team} vs ${match.away_team}\n` +
+          `Profit: ${profit.toFixed(2)}%\n` +
+          `Status: ${status}`
+        );
 
-        }
-
+        results.push({
+          match: `${match.home_team} vs ${match.away_team}`,
+          sport,
+          profit: profit.toFixed(2) + "%",
+          status,
+          odds: best
+        });
       });
     }
 
     return res.json({
       success: true,
       count: results.length,
-      data: results.sort((a, b) => parseFloat(b.profit) - parseFloat(a.profit))
+      data: results.sort((a, b) =>
+        parseFloat(b.profit) - parseFloat(a.profit)
+      )
     });
 
   } catch (err) {
-    console.error(err);
+    console.error("ARB ERROR:", err);
     return res.status(500).json({
       success: false,
       message: err.message
