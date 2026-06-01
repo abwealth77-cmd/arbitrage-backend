@@ -12,6 +12,13 @@ app.use(express.json());
 const API_KEY = process.env.ODDS_API_KEY;
 const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
+const fs = require("fs");
+
+const BOOK_SCORE = {
+  pinnacle: 1.0,
+  bet365: 0.97,
+  "1xbet": 0.92
+};
 async function sendTelegramMessage(text) {
   if (!TELEGRAM_TOKEN || !TELEGRAM_CHAT_ID) return;
 
