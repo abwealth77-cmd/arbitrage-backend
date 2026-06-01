@@ -33,6 +33,18 @@ function calculateStake(profit, bankroll = 100) {
 
   return Math.max(1, bankroll * kelly);
 }
+function logTrade(trade) {
+  const file = "./arb_logs.json";
+
+  let logs = [];
+  if (fs.existsSync(file)) {
+    logs = JSON.parse(fs.readFileSync(file));
+  }
+
+  logs.push(trade);
+
+  fs.writeFileSync(file, JSON.stringify(logs, null, 2));
+}
 async function sendTelegramMessage(text) {
   if (!TELEGRAM_TOKEN || !TELEGRAM_CHAT_ID) return;
 
