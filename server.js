@@ -185,3 +185,10 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log("Server running on port", PORT);
 });
+setInterval(async () => {
+  try {
+    await fetch("http://localhost:" + PORT + "/arbs");
+  } catch (e) {
+    console.log("Auto-run error:", e.message);
+  }
+}, 60 * 1000); // every 60 seconds
