@@ -146,10 +146,7 @@ app.get("/arbs", async (req, res) => {
     });
   }
 });
-app.get("/test-telegram", async (req, res) => {
-  await sendTelegramMessage("✅ Telegram test from arbitrage bot");
-  res.json({ success: true });
-});
+
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
