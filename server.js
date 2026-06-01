@@ -19,6 +19,9 @@ const BOOK_SCORE = {
   bet365: 0.97,
   "1xbet": 0.92
 };
+let isRunning = false;
+let lastRunTime = 0;
+let failureCount = 0;
 function calculateScore(profit, bookCount) {
   return (profit * 10) + (bookCount * 2);
 }
