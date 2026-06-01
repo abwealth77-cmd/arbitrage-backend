@@ -93,7 +93,10 @@ app.get("/", (req, res) => {
     message: "Arbitrage backend is running 🚀"
   });
 });
-
+app.get("/test-alert", async (req, res) => {
+  await sendTelegramMessage("🔥 TEST ALERT: Arb bot is working");
+  res.json({ success: true });
+});
 // -------------------- TEST KEY --------------------
 app.get("/test-key", (req, res) => {
   res.json({
