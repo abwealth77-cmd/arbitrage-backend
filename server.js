@@ -106,8 +106,10 @@ app.get("/arbs", async (req, res) => {
 
         const totalImplied = odds.reduce((sum, o) => sum + (1 / o), 0);
         const profit = ((1 / totalImplied) - 1) * 100;
+        console.log("BEST ODDS:", best);
+        console.log("PROFIT:", profit);
 
-        if (profit > -2) {
+        if (profit > -8) {
 
           if (profit > 0.5) {
             sendTelegramMessage(
