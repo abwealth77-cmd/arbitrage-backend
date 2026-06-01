@@ -88,19 +88,10 @@ app.get("/arbs", async (req, res) => {
   try {
     const sports = [
       "soccer_brazil_serie_b",
-      "soccer_chile_campeonato",
-      "soccer_conmebol_copa_libertadores",
-      "soccer_conmebol_copa_sudamericana",
       "soccer_japan_j_league",
       "soccer_norway_eliteserien",
       "soccer_spain_segunda_division"
     ];
-
-    const BOOK_WEIGHT = {
-      pinnacle: 1.0,
-      bet365: 0.98,
-      "1xbet": 0.95
-    };
 
     let results = [];
 
@@ -114,21 +105,23 @@ app.get("/arbs", async (req, res) => {
 
       data.forEach(match => {
         if (!match.home_team || !match.away_team) return;
+        if (!isFresh(match)) return;
 
         const books = match.bookmakers;
         if (!books) return;
 
         let best = {};
+        let bookCount = 0;
 
-        // STEP 1: weighted best odds (IMPORTANT UPGRADE)
         books.forEach(b => {
-          const weight = BOOK_WEIGHT[b.key] || 0.9;
+          const weight = BOOK_SCORE[b.key] || 0.9;
+          bookCount++;
 
           b.markets?.[0]?.outcomes?.forEach(o => {
-            const weightedPrice = o.price * weight;
+            const weighted = o.price * weight;
 
-            if (!best[o.name] || weightedPrice > best[o.name]) {
-              best[o.name] = weightedPrice;
+            if (!best[o.name] || weighted > best[o.name]) {
+              best[o.name] = weighted;
             }
           });
         });
@@ -136,59 +129,50 @@ app.get("/arbs", async (req, res) => {
         const odds = Object.values(best);
         const labels = Object.keys(best);
 
-        if (odds.length !== 3) return; // enforce TRUE 3-way market
+        if (odds.length !== 3) return;
 
-        // STEP 2: true arbitrage formula
-        const totalImplied = odds.reduce((sum, o) => sum + (1 / o), 0);
+        const totalImplied = odds.reduce((s, o) => s + (1 / o), 0);
         const profit = ((1 / totalImplied) - 1) * 100;
 
-        // STEP 3: strict filtering (PRO LEVEL)
-        if (profit < 0.8) return;
+        if (profit < 1.0) return; // institutional threshold
 
-        // STEP 4: stake calculator (VERY IMPORTANT)
-        const bankroll = 100; // you can change later
-        const stakes = {};
+        const score = calculateScore(profit, bookCount);
+        const stake = calculateStake(profit);
 
-        labels.forEach(label => {
-          stakes[label] = ((bankroll / best[label]) / totalImplied).toFixed(2);
-        });
-
-        const status =
-          profit >= 2
-            ? "🔥 HIGH VALUE ARB"
-            : "⚡ VALID ARB";
-
-        // STEP 5: Telegram alert (clean + actionable)
-        sendTelegramMessage(
-          `🚨 PRO ARBITRAGE ALERT 🚨\n\n` +
-          `${match.home_team} vs ${match.away_team}\n` +
-          `Profit: ${profit.toFixed(2)}%\n\n` +
-          `📊 STAKES (₦100 example):\n` +
-          `${labels.map(l => `${l}: ${stakes[l]}`).join("\n")}\n\n` +
-          `Status: ${status}`
-        );
-
-        results.push({
+        const trade = {
           match: `${match.home_team} vs ${match.away_team}`,
           sport,
           profit: profit.toFixed(2) + "%",
-          status,
+          score,
+          stake: stake.toFixed(2),
           odds: best,
-          stakes
-        });
+          timestamp: new Date().toISOString()
+        };
+
+        logTrade(trade);
+
+        if (score > 15) {
+          sendTelegramMessage(
+            `🏦 INSTITUTIONAL ARB\n\n` +
+            `${trade.match}\n` +
+            `Profit: ${trade.profit}\n` +
+            `Score: ${trade.score}\n` +
+            `Stake: $${trade.stake}`
+          );
+        }
+
+        results.push(trade);
       });
     }
 
     return res.json({
       success: true,
       count: results.length,
-      data: results.sort(
-        (a, b) => parseFloat(b.profit) - parseFloat(a.profit)
-      )
+      data: results.sort((a, b) => b.score - a.score)
     });
 
   } catch (err) {
-    console.error("PRO ARB ERROR:", err);
+    console.error("INSTITUTIONAL ERROR:", err);
     return res.status(500).json({
       success: false,
       message: err.message
