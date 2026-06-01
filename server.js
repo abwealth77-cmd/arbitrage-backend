@@ -22,6 +22,11 @@ const BOOK_SCORE = {
 function calculateScore(profit, bookCount) {
   return (profit * 10) + (bookCount * 2);
 }
+function isFresh(match) {
+  return match?.commence_time
+    ? (new Date(match.commence_time) - new Date()) > 10 * 60 * 1000
+    : true;
+}
 async function sendTelegramMessage(text) {
   if (!TELEGRAM_TOKEN || !TELEGRAM_CHAT_ID) return;
 
