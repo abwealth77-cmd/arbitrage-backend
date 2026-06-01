@@ -210,10 +210,35 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log("Server running on port", PORT);
 });
-setInterval(async () => {
-  try {
-    await fetch("http://localhost:" + PORT + "/arbs");
-  } catch (e) {
-    console.log("Auto-run error:", e.message);
-  }
-}, 60 * 1000); // every 60 seconds
+function startScheduler() {
+  let interval = 60 * 1000;
+
+  const loop = async () => {
+    try {
+      // ⛔ anti-overload rule
+      if (failureCount >= 3) {
+        interval = 5 * 60 * 1000;
+        console.log("⚠️ BACKOFF MODE ACTIVATED");
+      }
+
+      // ⛔ skip if still running
+      if (isRunning) return;
+
+      await runArbEngine();
+
+      // 📈 adaptive speed control
+      if (Date.now() - lastRunTime < 30 * 1000) {
+        interval = 45 * 1000;
+      }
+
+    } catch (err) {
+      console.log("Scheduler error:", err.message);
+    }
+
+    // 🔁 re-run using updated interval
+    setTimeout(loop, interval);
+  };
+
+  // start first run
+  setTimeout(loop, interval);
+}
