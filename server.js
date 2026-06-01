@@ -54,30 +54,14 @@ app.get("/sports", async (req, res) => {
 app.get("/arbs", async (req, res) => {
   try {
     const sports = [
-      "soccer_epl",
-      "soccer_spain_la_liga",
-      "soccer_italy_serie_a",
-      "soccer_germany_bundesliga",
-      "soccer_france_ligue_one",
-      "soccer_norway_eliteserien",
-      "soccer_norway_obos_ligaen",
-      "soccer_sweden_allsvenskan",
-      "soccer_sweden_superettan",
-      "soccer_denmark_superliga",
-      "soccer_denmark_1st_division",
-      "soccer_south_africa_premier",
-      "soccer_brazil_serie_a",
-      "soccer_brazil_serie_b",
-      "soccer_argentina_primera_division",
-      "soccer_colombia_categoria_a",
-      "soccer_portugal_primeira_liga",
-      "soccer_netherlands_eredivisie",
-      "soccer_turkey_super_league",
-      "soccer_belgium_first_division_a",
-      "soccer_japan_j_league",
-      "soccer_korea_kleague1",
-      "soccer_australia_aleague"
-    ];
+  "soccer_brazil_serie_b",
+  "soccer_chile_campeonato",
+  "soccer_conmebol_copa_libertadores",
+  "soccer_conmebol_copa_sudamericana",
+  "soccer_japan_j_league",
+  "soccer_norway_eliteserien",
+  "soccer_spain_segunda_division"
+];
 
     let results = [];
 
