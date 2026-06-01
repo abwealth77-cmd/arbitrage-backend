@@ -27,6 +27,12 @@ function isFresh(match) {
     ? (new Date(match.commence_time) - new Date()) > 10 * 60 * 1000
     : true;
 }
+function calculateStake(profit, bankroll = 100) {
+  const edge = profit / 100;
+  const kelly = edge / 2; // half-kelly (safer institutional version)
+
+  return Math.max(1, bankroll * kelly);
+}
 async function sendTelegramMessage(text) {
   if (!TELEGRAM_TOKEN || !TELEGRAM_CHAT_ID) return;
 
