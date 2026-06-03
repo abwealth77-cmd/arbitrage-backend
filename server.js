@@ -191,13 +191,13 @@ if (profit < 1.2) return;         // minimum edge filter
 
         if (signal === "A+" || signal === "A") {
           sendTelegramMessage(
-            `🏦 INSTITUTIONAL ARB\n\n` +
-            `${trade.match}\n` +
-            `Profit: ${trade.profit}\n` +
-            `Score: ${trade.score}\n` +
-            `Stake: $${trade.stake}`
-          );
-        }
+  `🏦 ARB SIGNAL ${signal}\n\n` +
+  `${trade.match}\n` +
+  `Sport: ${sport}\n` +
+  `Profit: ${trade.profit}\n` +
+  `Score: ${trade.score}\n` +
+  `Stake: $${trade.stake}`
+);
 
         results.push(trade);
       });
