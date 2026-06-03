@@ -1,6 +1,6 @@
 
 const express = require("express");
-const cors = require("cors");
+const cors = require("cors"); 
 
 const app = express();
 
@@ -198,7 +198,7 @@ if (profit < 1.2) return;         // minimum edge filter
   `Score: ${trade.score}\n` +
   `Stake: $${trade.stake}`
 );
-
+    }
         results.push(trade);
       });
     }
