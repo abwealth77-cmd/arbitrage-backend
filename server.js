@@ -162,7 +162,8 @@ app.get("/arbs", async (req, res) => {
         const totalImplied = odds.reduce((s, o) => s + (1 / o), 0);
         const profit = ((1 / totalImplied) - 1) * 100;
 
-        if (profit < -10) return; // institutional threshold
+        if (profit <= 0) return;          // no negative arbs
+if (profit < 1.2) return;         // minimum edge filter
 
         const score = calculateScore(profit, bookCount);
         const stake = calculateStake(profit);
