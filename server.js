@@ -228,7 +228,7 @@ function startScheduler() {
       // ⛔ skip if still running
       if (isRunning) return;
 
-      await runArbEngine();
+      await fetch("http://localhost:" + PORT + "/arbs");
 
       // 📈 adaptive speed control
       if (Date.now() - lastRunTime < 30 * 1000) {
