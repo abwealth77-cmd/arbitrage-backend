@@ -189,7 +189,7 @@ if (profit < 1.2) return;         // minimum edge filter
 
         logTrade(trade);
 
-        if (score > 0) {
+        if (signal === "A+" || signal === "A") {
           sendTelegramMessage(
             `🏦 INSTITUTIONAL ARB\n\n` +
             `${trade.match}\n` +
