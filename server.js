@@ -111,6 +111,12 @@ app.get("/sports", async (req, res) => {
   const data = await response.json();
   res.json(data);
 });
+function getSignalLevel(profit, score) {
+  if (profit >= 3 && score > 25) return "A+";
+  if (profit >= 2 && score > 20) return "A";
+  if (profit >= 1.5 && score > 15) return "B";
+  return "C";
+}
 // -------------------- ARBITRAGE ROUTE --------------------
 app.get("/arbs", async (req, res) => {
   try {
