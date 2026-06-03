@@ -58,7 +58,7 @@ async function runArbEngine() {
     console.log("🚀 ARB ENGINE RUNNING...");
 
     // CALL YOUR EXISTING LOGIC HERE
-    await runArbLogic();
+    await fetch("http://localhost:" + PORT + "/arbs");
 
     failureCount = 0; // reset on success
 
