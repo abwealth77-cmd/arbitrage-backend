@@ -174,15 +174,18 @@ if (profit < 1.2) return;         // minimum edge filter
         const score = calculateScore(profit, bookCount);
         const stake = calculateStake(profit);
 
-        const trade = {
-          match: `${match.home_team} vs ${match.away_team}`,
-          sport,
-          profit: profit.toFixed(2) + "%",
-          score,
-          stake: stake.toFixed(2),
-          odds: best,
-          timestamp: new Date().toISOString()
-        };
+        const signal = getSignalLevel(profit, score);
+
+  const trade = {
+  match: `${match.home_team} vs ${match.away_team}`,
+  sport,
+  profit: profit.toFixed(2) + "%",
+  score,
+  signal,
+  stake: stake.toFixed(2),
+  odds: best,
+  timestamp: new Date().toISOString()
+};
 
         logTrade(trade);
 
