@@ -162,7 +162,7 @@ app.get("/arbs", async (req, res) => {
         const totalImplied = odds.reduce((s, o) => s + (1 / o), 0);
         const profit = ((1 / totalImplied) - 1) * 100;
 
-        if (profit < 1.0) return; // institutional threshold
+        if (profit < -10) return; // institutional threshold
 
         const score = calculateScore(profit, bookCount);
         const stake = calculateStake(profit);
@@ -179,7 +179,7 @@ app.get("/arbs", async (req, res) => {
 
         logTrade(trade);
 
-        if (score > 15) {
+        if (score > 0) {
           sendTelegramMessage(
             `🏦 INSTITUTIONAL ARB\n\n` +
             `${trade.match}\n` +
