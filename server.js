@@ -11,7 +11,7 @@ app.use(express.json());
 const API_KEY = process.env.ODDS_API_KEY;
 const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
-const BANKROLL = 100; // You can change this to your actual bankroll
+const BANKROLL = 100; // Change to your bankroll
 
 const BOOK_SCORE = {
   pinnacle: 1.0,
@@ -32,12 +32,12 @@ let failureCount = 0;
 
 // -------------------- UTILS --------------------
 function calculateScore(profit, bookCount) {
-  return (profit * 10) + (bookCount * 2);
+  return profit * 10 + bookCount * 2;
 }
 
 function isFresh(match) {
   return match?.commence_time
-    ? (new Date(match.commence_time) - new Date()) > 10 * 60 * 1000
+    ? new Date(match.commence_time) - new Date() > 10 * 60 * 1000
     : true;
 }
 
@@ -56,10 +56,7 @@ async function sendTelegramMessage(text) {
     const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id: TELEGRAM_CHAT_ID,
-        text
-      })
+      body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text })
     });
     const data = await res.json();
     console.log("Telegram response:", data);
@@ -231,14 +228,23 @@ app.get("/test-key", (req, res) => {
 });
 
 // -------------------- SCHEDULER --------------------
+function startScheduler() {
+  const interval = 60 * 1000; // every 1 minute
+  const loop = async () => {
+    try {
+      await runArbEngine();
+    } catch (err) {
+      console.error("Scheduler error:", err.message);
+    } finally {
+      setTimeout(loop, interval);
+    }
+  };
+  loop();
+}
+
+// -------------------- START SERVER --------------------
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log("Server running on port", PORT);
   startScheduler();
 });
-
-function startScheduler() {
-  let interval = 60 * 1000; // start with 1 min
-
-  const loop = async () => {
-    try
