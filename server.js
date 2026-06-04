@@ -1,4 +1,3 @@
-// -------------------- SERVER.JS --------------------
 const express = require("express");
 const cors = require("cors");
 const fs = require("fs");
@@ -12,8 +11,9 @@ app.use(express.json());
 const API_KEY = process.env.ODDS_API_KEY;
 const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
-const BANKROLL = 100; // change this to your actual bankroll
+const BANKROLL = 100; // adjust as needed
 
+// -------------------- BOOKMAKER WEIGHTS --------------------
 const BOOK_SCORE = {
   pinnacle: 1.0,
   bet365: 0.97,
@@ -23,7 +23,10 @@ const BOOK_SCORE = {
   betwinner: 0.95,
   sportybet: 0.95,
   bet9ja: 0.95,
-  paripesa: 0.95
+  paripesa: 0.95,
+  williamhill: 0.9,
+  marathonbet: 0.9,
+  unibet: 0.9
 };
 
 // -------------------- GLOBALS --------------------
@@ -33,12 +36,12 @@ let failureCount = 0;
 
 // -------------------- UTILS --------------------
 function calculateScore(profit, bookCount) {
-  return profit * 10 + bookCount * 2;
+  return (profit * 10) + (bookCount * 2);
 }
 
 function isFresh(match) {
   return match?.commence_time
-    ? new Date(match.commence_time) - new Date() > 10 * 60 * 1000
+    ? (new Date(match.commence_time) - new Date()) > 10 * 60 * 1000
     : true;
 }
 
@@ -54,17 +57,14 @@ async function sendTelegramMessage(text) {
   if (!TELEGRAM_TOKEN || !TELEGRAM_CHAT_ID) return;
 
   try {
-    const res = await fetch(
-      `https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          chat_id: TELEGRAM_CHAT_ID,
-          text
-        })
-      }
-    );
+    const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: TELEGRAM_CHAT_ID,
+        text
+      })
+    });
     const data = await res.json();
     console.log("Telegram response:", data);
   } catch (err) {
@@ -73,41 +73,33 @@ async function sendTelegramMessage(text) {
 }
 
 function getSignalLevel(profit, score) {
-  if (profit > 5 && score > 25) return "HIGH";
-  if (profit > 2 && score > 15) return "MEDIUM";
+  if (profit > 3 && score > 20) return "HIGH";
+  if (profit > 1 && score > 10) return "MEDIUM";
   return "LOW";
 }
 
-// -------------------- ARB ENGINE V6 (Profit Ready) --------------------
+// -------------------- ARB ENGINE --------------------
 async function runArbEngine() {
   if (isRunning) return [];
   isRunning = true;
   lastRunTime = Date.now();
 
   try {
-    console.log("🚀 ARB ENGINE V6 RUNNING...");
+    console.log("🚀 ARB ENGINE RUNNING...");
 
     const sports = [
-      "soccer_brazil_serie_a",
       "soccer_brazil_serie_b",
-      "soccer_england_premier_league",
-      "soccer_england_championship",
-      "soccer_spain_primera_division",
-      "soccer_spain_segunda_division",
-      "soccer_germany_bundesliga",
-      "soccer_germany_2_bundesliga",
-      "soccer_italy_serie_a",
-      "soccer_italy_serie_b",
-      "soccer_france_ligue_1",
-      "soccer_france_ligue_2",
       "soccer_japan_j_league",
       "soccer_norway_eliteserien",
+      "soccer_spain_segunda_division",
       "soccer_portugal_primeira_liga",
       "soccer_netherlands_eredivisie",
       "soccer_turkey_super_lig",
       "soccer_mexico_liga_mx",
       "soccer_usa_mls",
-      "soccer_argentina_primera_division"
+      "soccer_argentina_primera_division",
+      "soccer_denmark_superliga",
+      "soccer_sweden_allsvenskan"
     ];
 
     let results = [];
@@ -115,7 +107,7 @@ async function runArbEngine() {
     const MAX_EXPOSURE = BANKROLL * 0.4;
 
     for (const sport of sports) {
-      const url = `https://api.the-odds-api.com/v4/sports/${sport}/odds/?apiKey=${API_KEY}&regions=eu&markets=h2h&bookmakers=bet365,pinnacle,1xbet,betking,msport,betwinner,sportybet,bet9ja,paripesa`;
+      const url = `https://api.the-odds-api.com/v4/sports/${sport}/odds/?apiKey=${API_KEY}&regions=eu&markets=h2h,totals,spreads&bookmakers=${Object.keys(BOOK_SCORE).join(",")}`;
       const response = await fetch(url);
       const data = await response.json();
       if (!Array.isArray(data)) continue;
@@ -132,18 +124,22 @@ async function runArbEngine() {
         for (const b of books) {
           const weight = BOOK_SCORE[b.key] || 0.9;
           bookCount++;
-          b.markets?.[0]?.outcomes?.forEach(o => {
-            const weighted = o.price * weight;
-            if (!best[o.name] || weighted > best[o.name]) best[o.name] = weighted;
+          b.markets?.forEach(market => {
+            market.outcomes?.forEach(o => {
+              const weighted = o.price * weight;
+              if (!best[o.name] || weighted > best[o.name]) best[o.name] = weighted;
+            });
           });
         }
 
         const odds = Object.values(best);
-        if (odds.length !== 3) continue;
+        if (odds.length < 2) continue; // allow more markets
 
         const totalImplied = odds.reduce((s, o) => s + 1 / o, 0);
         const profit = ((1 / totalImplied) - 1) * 100;
-        if (profit <= 0) continue;
+
+        // Log everything for debugging
+        console.log(`DEBUG: ${match.home_team} vs ${match.away_team} | profit: ${profit.toFixed(2)}%`);
 
         const score = calculateScore(profit, bookCount);
         const signal = getSignalLevel(profit, score);
@@ -175,12 +171,12 @@ async function runArbEngine() {
         if (signal === "MEDIUM" || signal === "HIGH") {
           await sendTelegramMessage(
             `🏦 ARB SIGNAL ${signal}\n` +
-              `${trade.match}\n` +
-              `Sport: ${sport}\n` +
-              `Profit: ${trade.profit}\n` +
-              `Score: ${trade.score}\n` +
-              `Stake: $${trade.stake}\n` +
-              `Bankroll: $${trade.bankroll}`
+            `${trade.match}\n` +
+            `Sport: ${sport}\n` +
+            `Profit: ${trade.profit}\n` +
+            `Score: ${trade.score}\n` +
+            `Stake: $${trade.stake}\n` +
+            `Bankroll: $${trade.bankroll}`
           );
         }
 
@@ -192,16 +188,14 @@ async function runArbEngine() {
     const liveTrades = results.filter(t => t.signal === "MEDIUM" || t.signal === "HIGH");
     if (liveTrades.length > 0) {
       console.log("📊 LIVE PROFITABLE TRADES:");
-      console.table(
-        liveTrades.map(t => ({
-          Match: t.match,
-          Sport: t.sport,
-          Profit: t.profit,
-          Score: t.score,
-          Signal: t.signal,
-          Stake: t.stake
-        }))
-      );
+      console.table(liveTrades.map(t => ({
+        Match: t.match,
+        Sport: t.sport,
+        Profit: t.profit,
+        Score: t.score,
+        Signal: t.signal,
+        Stake: t.stake
+      })));
     } else console.log("ℹ️ No MEDIUM/HIGH trades this run.");
 
     console.log(`✅ Total allocated bankroll: $${allocatedBankroll.toFixed(2)}`);
@@ -237,7 +231,16 @@ app.get("/test-key", (req, res) => {
 });
 
 // -------------------- SCHEDULER --------------------
+function startScheduler() {
+  const interval = 30 * 1000; // run every 30 seconds
+  setInterval(async () => {
+    console.log("⏱ Scheduler running arb engine...");
+    await runArbEngine();
+  }, interval);
+}
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log("Server running on port", PORT);
+  startScheduler();
 });
