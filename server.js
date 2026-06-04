@@ -26,8 +26,9 @@ const BOOK_SCORE = {
   paripesa: 0.95,
   betonline: 0.9,
   comeon: 0.9,
-  10bet: 0.9
+  "10bet": 0.9
 };
+
 
 // -------------------- GLOBALS --------------------
 let isRunning = false;
