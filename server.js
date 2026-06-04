@@ -28,8 +28,6 @@ const BOOK_SCORE = {
 
 // -------------------- GLOBALS --------------------
 let isRunning = false;
-let lastRunTime = 0;
-let failureCount = 0;
 
 // -------------------- UTILS --------------------
 function calculateScore(profit, bookCount) {
@@ -94,7 +92,7 @@ async function fetchSportyBet() {
 
 async function fetchBet9ja() {
   try {
-    const res = await fetch("https://www.bet9ja.com/api/odd-endpoint"); // Replace with actual endpoint
+    const res = await fetch("https://sports.bet9ja.com/api/odd-endpoint"); // Replace with actual endpoint
     const data = await res.json();
     return data.map(match => ({
       home_team: match.home,
@@ -111,38 +109,36 @@ async function fetchBet9ja() {
   }
 }
 
-// TODO: Add fetchers for MSport, Paripesa, BetKing
+// -------------------- PLACEHOLDER FETCHERS --------------------
+// For future use
+async function fetchParipesa() { return []; }
+async function fetchMSport() { return []; }
+async function fetchBetKing() { return []; }
 async function fetchAllBookies() {
-  const [sporty, bet9ja] = await Promise.all([
+  const [sporty, bet9ja, paripesa, msport, betking] = await Promise.all([
     fetchSportyBet(),
-    fetchBet9ja()
-    // Add others here
+    fetchBet9ja(),
+    fetchParipesa(),
+    fetchMSport(),
+    fetchBetKing()
   ]);
-  return [...sporty, ...bet9ja];
+  return [...sporty, ...bet9ja, ...paripesa, ...msport, ...betking];
 }
 
-// -------------------- ARB ENGINE V7 --------------------
+// -------------------- ARB ENGINE --------------------
 async function runArbEngine() {
   if (isRunning) return [];
   isRunning = true;
-  lastRunTime = Date.now();
 
   try {
-    console.log("🚀 ARB ENGINE V7 RUNNING...");
+    console.log("🚀 ARB ENGINE RUNNING...");
 
     const sports = [
       "soccer_brazil_serie_b",
       "soccer_japan_j_league",
       "soccer_norway_eliteserien",
       "soccer_spain_segunda_division",
-      "soccer_portugal_primeira_liga",
-      "soccer_netherlands_eredivisie",
-      "soccer_turkey_super_lig",
-      "soccer_mexico_liga_mx",
-      "soccer_usa_mls",
-      "soccer_argentina_primera_division",
-      "soccer_denmark_superliga",
-      "soccer_sweden_allsvenskan"
+      "soccer_portugal_primeira_liga"
     ];
 
     let results = [];
@@ -222,26 +218,12 @@ async function runArbEngine() {
       }
     }
 
-    // ------------------ LIVE TABLE ------------------
-    const liveTrades = results.filter(t => t.signal === "MEDIUM" || t.signal === "HIGH");
-    if (liveTrades.length > 0) {
-      console.log("📊 LIVE PROFITABLE TRADES:");
-      console.table(liveTrades.map(t => ({
-        Match: t.match,
-        Sport: t.sport,
-        Profit: t.profit,
-        Score: t.score,
-        Signal: t.signal,
-        Stake: t.stake
-      })));
-    } else console.log("ℹ️ No MEDIUM/HIGH trades this run.");
+    if (results.length > 0) console.log("✅ Trades found:", results.length);
+    else console.log("ℹ️ No profitable trades this run.");
 
-    console.log(`✅ Total allocated bankroll: $${allocatedBankroll.toFixed(2)}`);
-    failureCount = 0;
     return results;
 
   } catch (err) {
-    failureCount++;
     console.error("❌ ARB ENGINE ERROR:", err.message);
     return [];
   } finally {
@@ -249,4 +231,17 @@ async function runArbEngine() {
   }
 }
 
-// -------------------- EXPRESS ROUTES
+// -------------------- EXPRESS ROUTES --------------------
+app.get("/", (req, res) => res.json({ success: true, message: "Arbitrage backend running 🚀" }));
+app.get("/arbs", async (req, res) => {
+  const data = await runArbEngine();
+  res.json({ success: true, count: data.length, data });
+});
+app.get("/test-alert", async (req, res) => {
+  await sendTelegramMessage("Test alert from ARB bot");
+  res.json({ keyExists: true });
+});
+
+// -------------------- START SERVER --------------------
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
