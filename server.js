@@ -11,9 +11,9 @@ app.use(express.json());
 const API_KEY = process.env.ODDS_API_KEY;
 const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
-const BANKROLL = 100; // adjust as needed
+const BANKROLL = 100;
 
-// -------------------- BOOKMAKER WEIGHTS --------------------
+// Include more bookmakers (small + big)
 const BOOK_SCORE = {
   pinnacle: 1.0,
   bet365: 0.97,
@@ -24,9 +24,9 @@ const BOOK_SCORE = {
   sportybet: 0.95,
   bet9ja: 0.95,
   paripesa: 0.95,
-  williamhill: 0.9,
-  marathonbet: 0.9,
-  unibet: 0.9
+  betonline: 0.9,
+  comeon: 0.9,
+  10bet: 0.9
 };
 
 // -------------------- GLOBALS --------------------
@@ -36,12 +36,12 @@ let failureCount = 0;
 
 // -------------------- UTILS --------------------
 function calculateScore(profit, bookCount) {
-  return (profit * 10) + (bookCount * 2);
+  return profit * 10 + bookCount * 2;
 }
 
 function isFresh(match) {
   return match?.commence_time
-    ? (new Date(match.commence_time) - new Date()) > 10 * 60 * 1000
+    ? new Date(match.commence_time) - new Date() > 5 * 60 * 1000
     : true;
 }
 
@@ -57,14 +57,17 @@ async function sendTelegramMessage(text) {
   if (!TELEGRAM_TOKEN || !TELEGRAM_CHAT_ID) return;
 
   try {
-    const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id: TELEGRAM_CHAT_ID,
-        text
-      })
-    });
+    const res = await fetch(
+      `https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chat_id: TELEGRAM_CHAT_ID,
+          text
+        })
+      }
+    );
     const data = await res.json();
     console.log("Telegram response:", data);
   } catch (err) {
@@ -89,17 +92,12 @@ async function runArbEngine() {
 
     const sports = [
       "soccer_brazil_serie_b",
-      "soccer_japan_j_league",
-      "soccer_norway_eliteserien",
-      "soccer_spain_segunda_division",
-      "soccer_portugal_primeira_liga",
-      "soccer_netherlands_eredivisie",
-      "soccer_turkey_super_lig",
-      "soccer_mexico_liga_mx",
-      "soccer_usa_mls",
-      "soccer_argentina_primera_division",
       "soccer_denmark_superliga",
-      "soccer_sweden_allsvenskan"
+      "soccer_sweden_allsvenskan",
+      "soccer_norway_eliteserien",
+      "soccer_japan_j_league",
+      "soccer_portugal_primeira_liga",
+      "soccer_netherlands_eredivisie"
     ];
 
     let results = [];
@@ -107,7 +105,8 @@ async function runArbEngine() {
     const MAX_EXPOSURE = BANKROLL * 0.4;
 
     for (const sport of sports) {
-      const url = `https://api.the-odds-api.com/v4/sports/${sport}/odds/?apiKey=${API_KEY}&regions=eu&markets=h2h,totals,spreads&bookmakers=${Object.keys(BOOK_SCORE).join(",")}`;
+      // include multiple markets
+      const url = `https://api.the-odds-api.com/v4/sports/${sport}/odds/?apiKey=${API_KEY}&regions=eu&markets=h2h,spreads,totals&bookmakers=${Object.keys(BOOK_SCORE).join(",")}`;
       const response = await fetch(url);
       const data = await response.json();
       if (!Array.isArray(data)) continue;
@@ -124,22 +123,19 @@ async function runArbEngine() {
         for (const b of books) {
           const weight = BOOK_SCORE[b.key] || 0.9;
           bookCount++;
-          b.markets?.forEach(market => {
+          b.markets?.forEach(market =>
             market.outcomes?.forEach(o => {
               const weighted = o.price * weight;
               if (!best[o.name] || weighted > best[o.name]) best[o.name] = weighted;
-            });
-          });
+            })
+          );
         }
 
         const odds = Object.values(best);
-        if (odds.length < 2) continue; // allow more markets
+        if (odds.length < 2) continue; // need at least two outcomes
 
         const totalImplied = odds.reduce((s, o) => s + 1 / o, 0);
         const profit = ((1 / totalImplied) - 1) * 100;
-
-        // Log everything for debugging
-        console.log(`DEBUG: ${match.home_team} vs ${match.away_team} | profit: ${profit.toFixed(2)}%`);
 
         const score = calculateScore(profit, bookCount);
         const signal = getSignalLevel(profit, score);
@@ -168,6 +164,7 @@ async function runArbEngine() {
 
         logTrade(trade);
 
+        // Send Telegram for MEDIUM/HIGH only
         if (signal === "MEDIUM" || signal === "HIGH") {
           await sendTelegramMessage(
             `🏦 ARB SIGNAL ${signal}\n` +
@@ -185,18 +182,16 @@ async function runArbEngine() {
       }
     }
 
-    const liveTrades = results.filter(t => t.signal === "MEDIUM" || t.signal === "HIGH");
-    if (liveTrades.length > 0) {
-      console.log("📊 LIVE PROFITABLE TRADES:");
-      console.table(liveTrades.map(t => ({
-        Match: t.match,
-        Sport: t.sport,
-        Profit: t.profit,
-        Score: t.score,
-        Signal: t.signal,
-        Stake: t.stake
-      })));
-    } else console.log("ℹ️ No MEDIUM/HIGH trades this run.");
+    // Show all matches in console temporarily
+    console.log("📊 ARB ENGINE RESULTS:");
+    console.table(results.map(t => ({
+      Match: t.match,
+      Sport: t.sport,
+      Profit: t.profit,
+      Score: t.score,
+      Signal: t.signal,
+      Stake: t.stake
+    })));
 
     console.log(`✅ Total allocated bankroll: $${allocatedBankroll.toFixed(2)}`);
     failureCount = 0;
@@ -212,9 +207,7 @@ async function runArbEngine() {
 }
 
 // -------------------- EXPRESS ROUTES --------------------
-app.get("/", (req, res) => {
-  res.json({ success: true, message: "Arbitrage backend is running 🚀" });
-});
+app.get("/", (req, res) => res.json({ success: true, message: "Arbitrage backend is running 🚀" }));
 
 app.get("/arbs", async (req, res) => {
   const results = await runArbEngine();
@@ -226,21 +219,19 @@ app.get("/test-alert", async (req, res) => {
   res.json({ success: true });
 });
 
-app.get("/test-key", (req, res) => {
-  res.json({ keyExists: !!API_KEY });
-});
+app.get("/test-key", (req, res) => res.json({ keyExists: !!API_KEY }));
 
 // -------------------- SCHEDULER --------------------
-function startScheduler() {
-  const interval = 30 * 1000; // run every 30 seconds
-  setInterval(async () => {
-    console.log("⏱ Scheduler running arb engine...");
-    await runArbEngine();
-  }, interval);
-}
-
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log("Server running on port", PORT);
   startScheduler();
 });
+
+function startScheduler() {
+  const interval = 30 * 1000; // every 30 seconds
+  setInterval(async () => {
+    console.log("⏱ Running scheduled arb engine...");
+    await runArbEngine();
+  }, interval);
+}
