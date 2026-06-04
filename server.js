@@ -11,7 +11,7 @@ app.use(express.json());
 const API_KEY = process.env.ODDS_API_KEY;
 const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
-const BANKROLL = 100; // Change to your bankroll
+const BANKROLL = 100; // Adjust as needed
 
 const BOOK_SCORE = {
   pinnacle: 1.0,
@@ -41,8 +41,7 @@ function isFresh(match) {
     : true;
 }
 
-function logTrade(trade) {
-  const file = "./arb_logs.json";
+function logTrade(trade, file = "./arb_logs.json") {
   let logs = [];
   if (fs.existsSync(file)) logs = JSON.parse(fs.readFileSync(file));
   logs.push(trade);
@@ -56,7 +55,10 @@ async function sendTelegramMessage(text) {
     const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text })
+      body: JSON.stringify({
+        chat_id: TELEGRAM_CHAT_ID,
+        text
+      })
     });
     const data = await res.json();
     console.log("Telegram response:", data);
@@ -71,74 +73,28 @@ function getSignalLevel(profit, score) {
   return "LOW";
 }
 
-// -------------------- ARB ENGINE V6 --------------------
-async function runArbEngine() {
+// -------------------- TEST ARB ENGINE --------------------
+// Generates fake arbitrage trades for testing
+async function runTestArbEngine() {
   if (isRunning) return [];
   isRunning = true;
   lastRunTime = Date.now();
 
   try {
-    console.log("🚀 ARB ENGINE V6 RUNNING...");
+    console.log("🚀 TEST ARB ENGINE RUNNING...");
 
-    const sports = [
-      "soccer_brazil_serie_a",
-      "soccer_brazil_serie_b",
-      "soccer_england_premier_league",
-      "soccer_england_championship",
-      "soccer_spain_primera_division",
-      "soccer_spain_segunda_division",
-      "soccer_germany_bundesliga",
-      "soccer_germany_2_bundesliga",
-      "soccer_italy_serie_a",
-      "soccer_italy_serie_b",
-      "soccer_france_ligue_1",
-      "soccer_france_ligue_2",
-      "soccer_japan_j_league",
-      "soccer_norway_eliteserien",
-      "soccer_portugal_primeira_liga",
-      "soccer_netherlands_eredivisie",
-      "soccer_turkey_super_lig",
-      "soccer_mexico_liga_mx",
-      "soccer_usa_mls",
-      "soccer_argentina_primera_division"
-    ];
+    // Fake sports
+    const sports = ["soccer_test_league"];
 
-    let results = [];
+    const results = [];
     let allocatedBankroll = 0;
     const MAX_EXPOSURE = BANKROLL * 0.4;
 
     for (const sport of sports) {
-      const url = `https://api.the-odds-api.com/v4/sports/${sport}/odds/?apiKey=${API_KEY}&regions=eu&markets=h2h&bookmakers=bet365,pinnacle,1xbet,betking,msport,betwinner,sportybet,bet9ja,paripesa`;
-      const response = await fetch(url);
-      const data = await response.json();
-      if (!Array.isArray(data)) continue;
-
-      for (const match of data) {
-        if (!match.home_team || !match.away_team) continue;
-        if (!isFresh(match)) continue;
-
-        const books = match.bookmakers;
-        if (!books) continue;
-
-        let best = {};
-        let bookCount = 0;
-        for (const b of books) {
-          const weight = BOOK_SCORE[b.key] || 0.9;
-          bookCount++;
-          b.markets?.[0]?.outcomes?.forEach(o => {
-            const weighted = o.price * weight;
-            if (!best[o.name] || weighted > best[o.name]) best[o.name] = weighted;
-          });
-        }
-
-        const odds = Object.values(best);
-        if (odds.length !== 3) continue;
-
-        const totalImplied = odds.reduce((s, o) => s + 1 / o, 0);
-        const profit = ((1 / totalImplied) - 1) * 100;
-        if (profit <= 0) continue;
-
-        const score = calculateScore(profit, bookCount);
+      // Generate 5 fake matches
+      for (let i = 1; i <= 5; i++) {
+        const profit = Math.random() * 10; // 0% to 10%
+        const score = Math.floor(Math.random() * 50);
         const signal = getSignalLevel(profit, score);
 
         let stakeFraction = 0.02;
@@ -152,22 +108,22 @@ async function runArbEngine() {
         allocatedBankroll += stake;
 
         const trade = {
-          match: `${match.home_team} vs ${match.away_team}`,
+          match: `Team${i} vs Team${i + 1}`,
           sport,
           profit: profit.toFixed(2) + "%",
           score,
           signal,
           stake: stake.toFixed(2),
           bankroll: BANKROLL.toFixed(2),
-          odds: best,
+          odds: { Team1: 2 + Math.random(), Team2: 2 + Math.random(), Draw: 3 + Math.random() },
           timestamp: new Date().toISOString()
         };
 
-        logTrade(trade);
+        logTrade(trade, "./test_arb_logs.json");
 
         if (signal === "MEDIUM" || signal === "HIGH") {
           await sendTelegramMessage(
-            `🏦 ARB SIGNAL ${signal}\n` +
+            `🏦 TEST ARB SIGNAL ${signal}\n` +
             `${trade.match}\n` +
             `Sport: ${sport}\n` +
             `Profit: ${trade.profit}\n` +
@@ -178,30 +134,23 @@ async function runArbEngine() {
         }
 
         results.push(trade);
-        if (allocatedBankroll >= MAX_EXPOSURE) break;
       }
     }
 
-    const liveTrades = results.filter(t => t.signal === "MEDIUM" || t.signal === "HIGH");
-    if (liveTrades.length > 0) {
-      console.log("📊 LIVE PROFITABLE TRADES:");
-      console.table(liveTrades.map(t => ({
-        Match: t.match,
-        Sport: t.sport,
-        Profit: t.profit,
-        Score: t.score,
-        Signal: t.signal,
-        Stake: t.stake
-      })));
-    } else console.log("ℹ️ No MEDIUM/HIGH trades this run.");
+    console.log(`✅ Test trades generated: ${results.length}`);
+    console.table(results.map(t => ({
+      Match: t.match,
+      Profit: t.profit,
+      Signal: t.signal,
+      Stake: t.stake
+    })));
 
-    console.log(`✅ Total allocated bankroll: $${allocatedBankroll.toFixed(2)}`);
     failureCount = 0;
     return results;
 
   } catch (err) {
     failureCount++;
-    console.error("❌ ARB ENGINE ERROR:", err.message);
+    console.error("❌ TEST ARB ENGINE ERROR:", err.message);
     return [];
   } finally {
     isRunning = false;
@@ -214,7 +163,8 @@ app.get("/", (req, res) => {
 });
 
 app.get("/arbs", async (req, res) => {
-  const results = await runArbEngine();
+  // Here we can switch to live ARB later
+  const results = await runTestArbEngine();
   res.json({ success: true, count: results.length, data: results });
 });
 
@@ -227,24 +177,8 @@ app.get("/test-key", (req, res) => {
   res.json({ keyExists: !!API_KEY });
 });
 
-// -------------------- SCHEDULER --------------------
-function startScheduler() {
-  const interval = 60 * 1000; // every 1 minute
-  const loop = async () => {
-    try {
-      await runArbEngine();
-    } catch (err) {
-      console.error("Scheduler error:", err.message);
-    } finally {
-      setTimeout(loop, interval);
-    }
-  };
-  loop();
-}
-
-// -------------------- START SERVER --------------------
+// -------------------- SERVER --------------------
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log("Server running on port", PORT);
-  startScheduler();
 });
