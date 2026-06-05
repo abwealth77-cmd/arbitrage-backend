@@ -23,11 +23,14 @@ const BOOK_SCORE = {
   betwinner: 0.95,
   sportybet: 0.95,
   bet9ja: 0.95,
-  paripesa: 0.95
+  paripesa: 0.95,
+  betano: 0.95,
+  betway: 0.95
 };
 
 // -------------------- GLOBALS --------------------
 let isRunning = false;
+let lastRunTime = 0;
 
 // -------------------- UTILS --------------------
 function calculateScore(profit, bookCount) {
@@ -50,7 +53,6 @@ function logTrade(trade) {
 
 async function sendTelegramMessage(text) {
   if (!TELEGRAM_TOKEN || !TELEGRAM_CHAT_ID) return;
-
   try {
     const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
       method: "POST",
@@ -70,10 +72,10 @@ function getSignalLevel(profit, score) {
   return "LOW";
 }
 
-// -------------------- NIGERIAN BOOKIE FETCHERS --------------------
+// -------------------- FETCHERS --------------------
 async function fetchSportyBet() {
   try {
-    const res = await fetch("https://www.sportybet.com/api/odd-endpoint"); // Replace with actual endpoint
+    const res = await fetch("https://www.sportybet.com/api/odd-endpoint");
     const data = await res.json();
     return data.map(match => ({
       home_team: match.home,
@@ -84,15 +86,12 @@ async function fetchSportyBet() {
         { name: "Draw", price: match.odds.draw }
       ]}]}]
     }));
-  } catch (err) {
-    console.error("SportyBet fetch error:", err.message);
-    return [];
-  }
+  } catch (err) { console.error("SportyBet fetch error:", err.message); return []; }
 }
 
 async function fetchBet9ja() {
   try {
-    const res = await fetch("https://sports.bet9ja.com/api/odd-endpoint"); // Replace with actual endpoint
+    const res = await fetch("https://sports.bet9ja.com/api/odd-endpoint");
     const data = await res.json();
     return data.map(match => ({
       home_team: match.home,
@@ -103,26 +102,117 @@ async function fetchBet9ja() {
         { name: "Draw", price: match.odds.draw }
       ]}]}]
     }));
-  } catch (err) {
-    console.error("Bet9ja fetch error:", err.message);
-    return [];
-  }
+  } catch (err) { console.error("Bet9ja fetch error:", err.message); return []; }
 }
 
-// -------------------- PLACEHOLDER FETCHERS --------------------
-// For future use
-async function fetchParipesa() { return []; }
-async function fetchMSport() { return []; }
-async function fetchBetKing() { return []; }
+async function fetchParipesa() {
+  try {
+    const res = await fetch("https://paripesa.ng/api/odds");
+    const data = await res.json();
+    return data.map(match => ({
+      home_team: match.home_team,
+      away_team: match.away_team,
+      bookmakers: [{ key: "paripesa", markets: [{ outcomes: [
+        { name: match.home_team, price: match.odds.home },
+        { name: match.away_team, price: match.odds.away },
+        { name: "Draw", price: match.odds.draw }
+      ]}]}]
+    }));
+  } catch (err) { console.error("Paripesa fetch error:", err.message); return []; }
+}
+
+async function fetchMSport() {
+  try {
+    const res = await fetch("https://www.msport.com/api/odds");
+    const data = await res.json();
+    return data.map(match => ({
+      home_team: match.home,
+      away_team: match.away,
+      bookmakers: [{ key: "msport", markets: [{ outcomes: [
+        { name: match.home, price: match.odds.home },
+        { name: match.away, price: match.odds.away },
+        { name: "Draw", price: match.odds.draw }
+      ]}]}]
+    }));
+  } catch (err) { console.error("MSport fetch error:", err.message); return []; }
+}
+
+async function fetchBetKing() {
+  try {
+    const res = await fetch("https://www.betking.com/api/odds");
+    const data = await res.json();
+    return data.map(match => ({
+      home_team: match.home,
+      away_team: match.away,
+      bookmakers: [{ key: "betking", markets: [{ outcomes: [
+        { name: match.home, price: match.odds.home },
+        { name: match.away, price: match.odds.away },
+        { name: "Draw", price: match.odds.draw }
+      ]}]}]
+    }));
+  } catch (err) { console.error("BetKing fetch error:", err.message); return []; }
+}
+
+async function fetchBetano() {
+  try {
+    const res = await fetch("https://www.betano.ng/api/odds");
+    const data = await res.json();
+    return data.map(match => ({
+      home_team: match.home,
+      away_team: match.away,
+      bookmakers: [{ key: "betano", markets: [{ outcomes: [
+        { name: match.home, price: match.odds.home },
+        { name: match.away, price: match.odds.away },
+        { name: "Draw", price: match.odds.draw }
+      ]}]}]
+    }));
+  } catch (err) { console.error("Betano fetch error:", err.message); return []; }
+}
+
+async function fetch1xBet() {
+  try {
+    const res = await fetch("https://www.1xbet.ng/api/odds");
+    const data = await res.json();
+    return data.map(match => ({
+      home_team: match.home,
+      away_team: match.away,
+      bookmakers: [{ key: "1xbet", markets: [{ outcomes: [
+        { name: match.home, price: match.odds.home },
+        { name: match.away, price: match.odds.away },
+        { name: "Draw", price: match.odds.draw }
+      ]}]}]
+    }));
+  } catch (err) { console.error("1xBet fetch error:", err.message); return []; }
+}
+
+async function fetchBetway() {
+  try {
+    const res = await fetch("https://www.betway.com.ng/api/odds");
+    const data = await res.json();
+    return data.map(match => ({
+      home_team: match.home,
+      away_team: match.away,
+      bookmakers: [{ key: "betway", markets: [{ outcomes: [
+        { name: match.home, price: match.odds.home },
+        { name: match.away, price: match.odds.away },
+        { name: "Draw", price: match.odds.draw }
+      ]}]}]
+    }));
+  } catch (err) { console.error("Betway fetch error:", err.message); return []; }
+}
+
 async function fetchAllBookies() {
-  const [sporty, bet9ja, paripesa, msport, betking] = await Promise.all([
+  const results = await Promise.all([
     fetchSportyBet(),
     fetchBet9ja(),
     fetchParipesa(),
     fetchMSport(),
-    fetchBetKing()
+    fetchBetKing(),
+    fetchBetano(),
+    fetch1xBet(),
+    fetchBetway()
   ]);
-  return [...sporty, ...bet9ja, ...paripesa, ...msport, ...betking];
+  return results.flat();
 }
 
 // -------------------- ARB ENGINE --------------------
@@ -132,13 +222,20 @@ async function runArbEngine() {
 
   try {
     console.log("🚀 ARB ENGINE RUNNING...");
-
     const sports = [
       "soccer_brazil_serie_b",
       "soccer_japan_j_league",
       "soccer_norway_eliteserien",
       "soccer_spain_segunda_division",
-      "soccer_portugal_primeira_liga"
+      "soccer_portugal_primeira_liga",
+      "soccer_netherlands_eredivisie",
+    
+      "soccer_turkey_super_lig",
+      "soccer_mexico_liga_mx",
+      "soccer_usa_mls",
+      "soccer_argentina_primera_division",
+      "soccer_denmark_superliga",
+      "soccer_sweden_allsvenskan"
     ];
 
     let results = [];
@@ -146,18 +243,17 @@ async function runArbEngine() {
     const MAX_EXPOSURE = BANKROLL * 0.4;
 
     for (const sport of sports) {
-      const data = await fetchAllBookies();
-      if (!Array.isArray(data) || data.length === 0) continue;
+      const matches = await fetchAllBookies();
+      if (!Array.isArray(matches) || matches.length === 0) continue;
 
-      for (const match of data) {
+      for (const match of matches) {
         if (!match.home_team || !match.away_team) continue;
         if (!isFresh(match)) continue;
 
-        const books = match.bookmakers;
-        if (!books) continue;
-
+        const books = match.bookmakers || [];
         let best = {};
         let bookCount = 0;
+
         for (const b of books) {
           const weight = BOOK_SCORE[b.key] || 0.9;
           bookCount++;
@@ -168,7 +264,7 @@ async function runArbEngine() {
         }
 
         const odds = Object.values(best);
-        if (odds.length !== 3) continue;
+        if (odds.length !== 3) continue; // Only 1X2 markets
 
         const totalImplied = odds.reduce((s, o) => s + 1 / o, 0);
         const profit = ((1 / totalImplied) - 1) * 100;
@@ -218,11 +314,8 @@ async function runArbEngine() {
       }
     }
 
-    if (results.length > 0) console.log("✅ Trades found:", results.length);
-    else console.log("ℹ️ No profitable trades this run.");
-
+    console.log(`✅ Total allocated bankroll: $${allocatedBankroll.toFixed(2)}`);
     return results;
-
   } catch (err) {
     console.error("❌ ARB ENGINE ERROR:", err.message);
     return [];
@@ -232,16 +325,13 @@ async function runArbEngine() {
 }
 
 // -------------------- EXPRESS ROUTES --------------------
-app.get("/", (req, res) => res.json({ success: true, message: "Arbitrage backend running 🚀" }));
+app.get("/", (req, res) => res.json({ success: true, message: "Arbitrage backend is running 🚀" }));
+
 app.get("/arbs", async (req, res) => {
-  const data = await runArbEngine();
-  res.json({ success: true, count: data.length, data });
-});
-app.get("/test-alert", async (req, res) => {
-  await sendTelegramMessage("Test alert from ARB bot");
-  res.json({ keyExists: true });
+  const trades = await runArbEngine();
+  res.json({ success: true, count: trades.length, data: trades });
 });
 
 // -------------------- START SERVER --------------------
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Arbitrage server running on port ${PORT}`));
